@@ -25,7 +25,18 @@ class DualIme: InputMethodService() {
  fun key(r:LinearLayout, main:String, alt:String="",weight:Float=1f, hold:(()->Unit)?=null, action:()->Unit){val k=LinearLayout(this).apply {orientation=1;gravity=Gravity.CENTER;isClickable=true;contentDescription=if(alt.isEmpty())main else "$main / $alt";background=GradientDrawable().apply {cornerRadius=dp(8).toFloat();setColor(if(dark)0xff3c4043.toInt() else Color.WHITE)} }; val lp=LinearLayout.LayoutParams(0,-1,weight).apply{setMargins(dp(2),dp(3),dp(2),dp(3))
  if(main=="⇧"||main=="⇪"){height=(dp(h)*0.85f).toInt()-dp(6);gravity=Gravity.CENTER_VERTICAL}
  if(main=="↵"){setMargins(dp(2),dp(1),dp(2),dp(1))}};r.addView(k,lp)
- fun label(s:String,sz:Float,c:Int){k.addView(TextView(this).apply{text=s;textSize=sz;setTextColor(c);gravity=Gravity.CENTER;includeFontPadding=false;maxLines=1})}
+ val digit=main.length==1&&main[0].isDigit()&&alt.isEmpty()
+ val letter=alt.isNotEmpty()
+ val space=main=="Русский"||main=="English"
+ if(letter||digit)k.setPadding(dp(2),dp(2),dp(2),dp(2))
+ fun label(s:String,sz:Float,c:Int){
+ val t=TextView(this).apply{text=s;textSize=sz;setTextColor(c);gravity=Gravity.CENTER;includeFontPadding=false;maxLines=1}
+ if(letter||digit){
+ val maxPx=(sz*resources.displayMetrics.scaledDensity).toInt().coerceAtLeast(1)
+ t.setAutoSizeTextTypeUniformWithConfiguration(1,maxPx,1,android.util.TypedValue.COMPLEX_UNIT_PX)
+ k.addView(t,LinearLayout.LayoutParams(-1,0,if(letter&&s==alt&&!p.getBoolean("equal",false))0.65f else 1f))
+ }else k.addView(t)
+ }
  if(main=="↵" || main=="⇧" || main=="⇪"){
  k.addView(object:View(this@DualIme){
  override fun onDraw(c:android.graphics.Canvas){
@@ -43,7 +54,7 @@ class DualIme: InputMethodService() {
  },LinearLayout.LayoutParams(dp(if(main=="↵")32 else 25),dp(if(main=="↵")32 else 25)))
  }else if(main=="🌐"){k.addView(object:View(this@DualIme){
  override fun onDraw(c:android.graphics.Canvas){super.onDraw(c);val p=android.graphics.Paint(3).apply{color=fg;style=android.graphics.Paint.Style.STROKE;strokeWidth=dp(2).toFloat()};val x=width/2f;val y=height/2f;val a=minOf(width,height)*0.40f;c.drawCircle(x,y,a,p);c.drawOval(x-a*0.46f,y-a,x+a*0.46f,y+a,p);c.drawLine(x-a,y,x+a,y,p);c.drawLine(x-a*0.85f,y-a*0.5f,x+a*0.85f,y-a*0.5f,p);c.drawLine(x-a*0.85f,y+a*0.5f,x+a*0.85f,y+a*0.5f,p)}
- },LinearLayout.LayoutParams(dp(27),dp(27)))}else{if(alt.isNotEmpty())label(alt,if(p.getBoolean("equal",false))size else size*0.58f,sub);label(main,if(main.length>3)size*0.78f else size,fg)}
+ },LinearLayout.LayoutParams(dp(27),dp(27)))}else{if(alt.isNotEmpty())label(alt,if(p.getBoolean("equal",false))size else size*0.58f,sub);label(main,if(digit)size*1.15f else if(main.length>3)size*0.78f else size,fg)}
  val accent=main=="↵"
  val activeShift=(main=="⇧"||main=="⇪")&&shift>0
  val special=main in listOf("⇧","⇪","?123","ABC","🌐","⌫")
@@ -52,6 +63,7 @@ class DualIme: InputMethodService() {
  fun bg(c:Int)=GradientDrawable().apply {cornerRadius=dp(if(accent||main=="?123"||main=="ABC") 30 else 6).toFloat();setColor(c)}
  k.background=android.graphics.drawable.StateListDrawable().apply {addState(intArrayOf(android.R.attr.state_pressed),bg(if(dark)0xff657da5.toInt() else 0xffa8c7fa.toInt()));addState(intArrayOf(),bg(normal))}
  var down=false;var longDone=false
+ var sliding=false;var startX=0f;var startY=0f;var cursorX=0f
  fun confirmHold(){if(p.getBoolean("haptic",true)&&!KeyVibration.play(this,p,true))k.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)}
  var repeats=0
  val longTask=object:Runnable { override fun run(){
@@ -65,11 +77,28 @@ class DualIme: InputMethodService() {
  })
  k.setOnTouchListener { v,e ->
  when(e.actionMasked){
- MotionEvent.ACTION_DOWN -> {down=true;longDone=false;repeats=0;v.isPressed=true;if(p.getBoolean("haptic",true)){if(!KeyVibration.play(this,p))v.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)};if(main=="⌫")v.postDelayed(longTask,350L) else if(hold!=null)v.postDelayed(longTask,ViewConfiguration.getLongPressTimeout().toLong())
+ MotionEvent.ACTION_DOWN -> {down=true;longDone=false;sliding=false;startX=e.rawX;startY=e.rawY;cursorX=startX;repeats=0;v.isPressed=true;if(p.getBoolean("haptic",true)){if(!KeyVibration.play(this,p))v.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)};if(main=="⌫")v.postDelayed(longTask,350L) else if(hold!=null)v.postDelayed(longTask,ViewConfiguration.getLongPressTimeout().toLong())
  if(p.getBoolean("preview",true)&&main.length==1&&(main[0].isLetterOrDigit()||alt.isNotEmpty())){
  hidePreview();val t=TextView(this).apply{text=main;textSize=32f;gravity=Gravity.CENTER;setTextColor(fg);background=bg(normal)}
  val w=maxOf(dp(48),v.width);val popup=PopupWindow(t,w,dp(64),false).apply{isTouchable=false;isClippingEnabled=true;elevation=dp(6).toFloat()};preview=popup;try { popup.showAsDropDown(v,(v.width-w)/2,-v.height-dp(66)) } catch (_:RuntimeException){hidePreview()}
  }}
+ MotionEvent.ACTION_MOVE -> {
+ if(space&&down&&(!longDone||sliding)){
+ val dx=e.rawX-startX
+ if(!sliding&&kotlin.math.abs(dx)>=dp(8)&&kotlin.math.abs(dx)>kotlin.math.abs(e.rawY-startY)){
+ sliding=true;longDone=true;v.removeCallbacks(longTask);hidePreview()
+ }
+ if(sliding){
+ val step=dp(10).coerceAtLeast(1)
+ val count=((e.rawX-cursorX)/step).toInt().coerceIn(-40,40)
+ if(count!=0){
+ val code=if(count<0)KeyEvent.KEYCODE_DPAD_LEFT else KeyEvent.KEYCODE_DPAD_RIGHT
+ repeat(kotlin.math.abs(count)){currentInputConnection?.sendKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN,code));currentInputConnection?.sendKeyEvent(KeyEvent(KeyEvent.ACTION_UP,code))}
+ cursorX+=count*step
+ }
+ }
+ }
+ }
  MotionEvent.ACTION_UP -> {val click=down&&!longDone;down=false;v.removeCallbacks(longTask);hidePreview();v.isPressed=false;if(click)v.performClick()}
  MotionEvent.ACTION_CANCEL -> {down=false;v.removeCallbacks(longTask);hidePreview();v.isPressed=false}
  };true }
