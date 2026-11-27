@@ -26,12 +26,28 @@ class DualIme: InputMethodService() {
  if(main=="⇧"||main=="⇪"){height=(dp(h)*0.85f).toInt()-dp(6);gravity=Gravity.CENTER_VERTICAL}
  if(main=="↵"){setMargins(dp(2),dp(1),dp(2),dp(1))}};r.addView(k,lp)
  fun label(s:String,sz:Float,c:Int){k.addView(TextView(this).apply{text=s;textSize=sz;setTextColor(c);gravity=Gravity.CENTER;includeFontPadding=false;maxLines=1})}
- if(main=="🌐"){k.addView(object:View(this@DualIme){
+ if(main=="↵" || main=="⇧" || main=="⇪"){
+ k.addView(object:View(this@DualIme){
+ override fun onDraw(c:android.graphics.Canvas){
+ super.onDraw(c)
+ val scale=minOf(width,height)/32f
+ c.save();c.translate(width/2f-16*scale,height/2f-16*scale);c.scale(scale,scale)
+ val paint=android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply{color=if(main=="↵"||shift>0)0xff17365c.toInt() else fg;strokeWidth=2.8f;strokeCap=android.graphics.Paint.Cap.ROUND;strokeJoin=android.graphics.Paint.Join.ROUND;style=android.graphics.Paint.Style.STROKE}
+ val path=android.graphics.Path()
+ if(main=="↵"){path.moveTo(27f,7f);path.lineTo(27f,17f);path.lineTo(5f,17f);path.moveTo(13f,9f);path.lineTo(5f,17f);path.lineTo(13f,25f)}
+ else {path.moveTo(3f,15f);path.lineTo(16f,3f);path.lineTo(29f,15f);path.lineTo(22f,15f);path.lineTo(22f,25f);path.lineTo(10f,25f);path.lineTo(10f,15f);path.close();if(shift>0)paint.style=android.graphics.Paint.Style.FILL}
+ c.drawPath(path,paint)
+ if(main=="⇪"){paint.style=android.graphics.Paint.Style.STROKE;c.drawLine(10f,29f,22f,29f,paint)}
+ c.restore()
+ }
+ },LinearLayout.LayoutParams(dp(if(main=="↵")32 else 25),dp(if(main=="↵")32 else 25)))
+ }else if(main=="🌐"){k.addView(object:View(this@DualIme){
  override fun onDraw(c:android.graphics.Canvas){super.onDraw(c);val p=android.graphics.Paint(3).apply{color=fg;style=android.graphics.Paint.Style.STROKE;strokeWidth=dp(2).toFloat()};val x=width/2f;val y=height/2f;val a=minOf(width,height)*0.40f;c.drawCircle(x,y,a,p);c.drawOval(x-a*0.46f,y-a,x+a*0.46f,y+a,p);c.drawLine(x-a,y,x+a,y,p);c.drawLine(x-a*0.85f,y-a*0.5f,x+a*0.85f,y-a*0.5f,p);c.drawLine(x-a*0.85f,y+a*0.5f,x+a*0.85f,y+a*0.5f,p)}
  },LinearLayout.LayoutParams(dp(27),dp(27)))}else{if(alt.isNotEmpty())label(alt,if(p.getBoolean("equal",false))size else size*0.58f,sub);label(main,if(main.length>3)size*0.78f else size,fg)}
  val accent=main=="↵"
+ val activeShift=(main=="⇧"||main=="⇪")&&shift>0
  val special=main in listOf("⇧","⇪","?123","ABC","🌐","⌫")
- val normal=when {accent->if(dark)0xffa8c7fa.toInt() else 0xffc2e7ff.toInt();special->if(dark)0xff505764.toInt() else 0xffcbd3e1.toInt();else->if(dark)0xff3c4043.toInt() else Color.WHITE}
+ val normal=when {accent||activeShift->if(dark)0xffa8c7fa.toInt() else 0xffc2e7ff.toInt();special->if(dark)0xff505764.toInt() else 0xffcbd3e1.toInt();else->if(dark)0xff3c4043.toInt() else Color.WHITE}
  if(accent){(k.getChildAt(k.childCount-1) as? TextView)?.setTextColor(0xff202124.toInt())}
  fun bg(c:Int)=GradientDrawable().apply {cornerRadius=dp(if(accent||main=="?123"||main=="ABC") 30 else 6).toFloat();setColor(c)}
  k.background=android.graphics.drawable.StateListDrawable().apply {addState(intArrayOf(android.R.attr.state_pressed),bg(if(dark)0xff657da5.toInt() else 0xffa8c7fa.toInt()));addState(intArrayOf(),bg(normal))}
@@ -62,6 +78,6 @@ class DualIme: InputMethodService() {
  key(r,shifted(m),shifted(n),hold=hold){send(shifted(m))}}
  if(i==2)deleteKey(r)}
  }
- val r=row();key(r,if(symbols)"ABC" else "?123",weight=1.5f){symbols=!symbols;draw()};key(r,",",weight=1f){send(",")};key(r,"🌐",weight=1f){ru=!ru;p.edit().putBoolean("ru",ru).apply();draw()};key(r,if(ru)"Русский" else "English",weight=4.1f){send(" ")};key(r,".",weight=1f){send(".")};key(r,"↵",weight=1.8f){val a=currentInputEditorInfo?.imeOptions?.and(EditorInfo.IME_MASK_ACTION)?:0;if(a in 2..7 && ((currentInputEditorInfo?.imeOptions?:0) and EditorInfo.IME_FLAG_NO_ENTER_ACTION)==0)currentInputConnection?.performEditorAction(a) else send("\n")}
+ val r=row();key(r,if(symbols)"ABC" else "?123",weight=1.5f){symbols=!symbols;draw()};key(r,",",weight=1f){send(",")};key(r,"🌐",weight=1f){ru=!ru;p.edit().putBoolean("ru",ru).apply();draw()};key(r,if(ru)"Русский" else "English",weight=3.9f){send(" ")};key(r,".",weight=1f){send(".")};key(r,"↵",weight=2.0f){val a=currentInputEditorInfo?.imeOptions?.and(EditorInfo.IME_MASK_ACTION)?:0;if(a in 2..7 && ((currentInputEditorInfo?.imeOptions?:0) and EditorInfo.IME_FLAG_NO_ENTER_ACTION)==0)currentInputConnection?.performEditorAction(a) else send("\n")}
  }
 }
