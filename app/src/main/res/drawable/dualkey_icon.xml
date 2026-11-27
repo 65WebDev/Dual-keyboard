@@ -3,5 +3,5 @@
 <path android:fillColor="#A8C7FA" android:pathData="M20,17 L57,17 Q64,17 64,24 L64,61 Q64,68 57,68 L20,68 Q13,68 13,61 L13,24 Q13,17 20,17 Z"/>
 <path android:strokeColor="#17365C" android:strokeWidth="5" android:strokeLineJoin="round" android:strokeLineCap="round" android:pathData="M25,51 L38,27 L51,51 M30,42 L46,42"/>
 <path android:fillColor="#FFFFFF" android:pathData="M54,43 L88,43 Q95,43 95,50 L95,87 Q95,94 88,94 L54,94 Q47,94 47,87 L47,50 Q47,43 54,43 Z"/>
-<path android:strokeColor="#17365C" android:strokeWidth="5" android:strokeLineJoin="round" android:strokeLineCap="round" android:pathData="M80,82 L80,55 L69,55 C55,55 55,69 69,69 L80,69 M69,69 L59,82"/>
+<path android:strokeColor="#17365C" android:strokeWidth="2.8" android:strokeLineCap="round" android:pathData="M87,68.5 A16,16 0,1 1,55,68.5 A16,16 0,1 1,87,68.5 M71,52.5 C61,59 61,78 71,84.5 C81,78 81,59 71,52.5 M55,68.5 L87,68.5 M58,60 L84,60 M58,77 L84,77"/>
 </vector>

@@ -26,6 +26,10 @@ English + Russian, Ukrainian, German, French, Spanish, Italian, Portuguese, Poli
 
 Android 8.0 (API 26) or later. Internet access is used for dictionary downloads; gesture decoding runs locally. The application is under active development; compatibility and recognition quality may vary.
 
+## License
+
+DualKey source code is licensed under the [MIT License](LICENSE). Third-party dictionary data remains subject to its respective upstream licenses.
+
 ## Build and dictionary sources
 
 JDK 17, Gradle 8.9, Android SDK 35. Run `python3 -m pip install wordfreq==3.1.1`, `python3 scripts/expand_dictionaries.py`, then `gradle assembleDebug`. GitHub Actions builds and publishes APKs.
@@ -59,6 +63,10 @@ DualKey — экспериментальная клавиатура Android, о�
 3. Выберите второй язык и при необходимости скачайте словарь.
 
 Android 8.0 и выше. Интернет используется для загрузки словарей, распознавание выполняется локально. Приложение находится в активной разработке.
+
+### Лицензия
+
+Исходный код DualKey распространяется по [лицензии MIT](LICENSE). Сторонние словари сохраняют условия лицензий своих исходных проектов.
 
 ### Сборка и словари
 
