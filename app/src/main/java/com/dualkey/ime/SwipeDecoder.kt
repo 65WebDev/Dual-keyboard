@@ -22,8 +22,8 @@ class SwipeDecoder(private val context:Context){
  val actual=sample(path)
  val first=path.first();val last=path.last()
  val best=java.util.PriorityQueue<Pair<String,Float>>(compareByDescending{it.second})
- val starts=keys.filterValues{dist(first,it)/unit<2.0f}.keys
- val ends=keys.filterValues{dist(last,it)/unit<2.0f}.keys
+ val starts=keys.entries.sortedBy{dist(first,it.value)}.take(3).filter{dist(first,it.value)/unit<2.0f}.map{it.key}
+ val ends=keys.entries.sortedBy{dist(last,it.value)}.take(3).filter{dist(last,it.value)/unit<2.0f}.map{it.key}
  val dictionary=if(russian)ru else en
  for(a in starts)for(b in ends)for((rank,word) in dictionary[a to b].orEmpty()){
  if(dist(first,keys[a]!!)+dist(last,keys[b]!!)>unit*3.2f)continue
@@ -32,7 +32,7 @@ class SwipeDecoder(private val context:Context){
  val endpoint=(dist(first,points.first())+dist(last,points.last()))/unit
  if(endpoint>3.2f)continue
  val expected=sample(points)
- var error=0f;for(i in actual.indices){val d=dist(actual[i],expected[i])/unit;error+=d*d}
+ var error=0f;for(i in actual.indices){val dx=(actual[i].x-expected[i].x)/unit;val dy=(actual[i].y-expected[i].y)/unit;error+=dx*dx+dy*dy}
  val score=error/actual.size+endpoint*0.45f+ln(1f+rank)*0.025f
  if(best.size<3||score<best.peek()!!.second){best.add(word to score);if(best.size>3)best.poll()}
  }

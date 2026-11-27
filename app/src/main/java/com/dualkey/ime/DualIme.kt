@@ -41,7 +41,7 @@ class DualIme: InputMethodService() {
  if(modifier=="?123")symbols=true else if(modifier=="🌐")ru=!ru else shift=1
  draw();pulse()
  }
- if(modifierDrag){fingerX=e.rawX;fingerY=e.rawY;invalidate();return true}
+ if(modifierDrag){fingerX=e.rawX;fingerY=e.rawY;val selected=hit(fingerX,fingerY);targets.forEach{(v,value)->v.isPressed=value==selected&&value.length==1&&value !in listOf("⇧","⇪","⌫","↵")};invalidate();return true}
  }
  if(modifierDrag&&(e.actionMasked==MotionEvent.ACTION_UP||e.actionMasked==MotionEvent.ACTION_CANCEL)){
  val value=if(e.actionMasked==MotionEvent.ACTION_UP)hit(e.rawX,e.rawY) else null
@@ -85,12 +85,12 @@ class DualIme: InputMethodService() {
  val centers=swipeKeys.mapValues{(_,v)->val a=IntArray(2);v.getLocationOnScreen(a);android.graphics.PointF(a[0]-pos[0]+v.width/2f,a[1]-pos[1]+v.height/2f)}
  val path=trail.toList();val lang=ru;val unit=dp(30).toFloat();val caps=shift;val token=session
  clearTrail();pulse()
- if(shift==1){shift=0;autoShift=false;draw()}
+ if(shift==1){shift=0;autoShift=false;ui.post{if(token==session&&!touching)draw()}}
  worker.execute {
  val words=decoder.decode(path,centers,lang,unit)
  ui.post {
  val apply:()->Unit={if(token==session&&isInputViewShown&&words.isNotEmpty())applySwipe(words,caps)}
- if(touching)deferred.add(apply) else apply()
+ apply()
  }
  }
  }
@@ -161,10 +161,12 @@ class DualIme: InputMethodService() {
  paint.textSize=requested
  val bounds=android.graphics.Rect()
  paint.getTextBounds(s,0,s.length,bounds)
- val scale=minOf(1f,(width-dp(2)).coerceAtLeast(1)/paint.measureText(s).coerceAtLeast(1f),(height-dp(2)).coerceAtLeast(1)/bounds.height().coerceAtLeast(1).toFloat())
+ val metrics=paint.fontMetrics
+ val scale=if(letter)minOf(1f,(width-dp(2)).coerceAtLeast(1)/paint.measureText("Ш").coerceAtLeast(1f),(height-dp(2)).coerceAtLeast(1)/(metrics.descent-metrics.ascent).coerceAtLeast(1f)) else minOf(1f,(width-dp(2)).coerceAtLeast(1)/paint.measureText(s).coerceAtLeast(1f),(height-dp(2)).coerceAtLeast(1)/bounds.height().coerceAtLeast(1).toFloat())
  paint.textSize=requested*scale
  paint.getTextBounds(s,0,s.length,bounds)
- canvas.drawText(s,width/2f,height/2f-(bounds.top+bounds.bottom)/2f,paint)
+ val fm=paint.fontMetrics
+ canvas.drawText(s,width/2f,if(letter)height/2f-(fm.ascent+fm.descent)/2f else height/2f-(bounds.top+bounds.bottom)/2f,paint)
  }
  }
  if(letter||digit)k.addView(t,LinearLayout.LayoutParams(-1,0,if(letter&&s==alt&&!p.getBoolean("equal",false))0.85f else 1.15f))
