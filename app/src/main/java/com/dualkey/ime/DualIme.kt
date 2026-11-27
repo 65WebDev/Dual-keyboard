@@ -20,7 +20,7 @@ class DualIme: InputMethodService() {
  if(!liveGesture||previewBusy||trail.size<2||SystemClock.uptimeMillis()-lastPreviewAt<150)return
  val pos=IntArray(2);root.getLocationOnScreen(pos)
  val centers=swipeKeys.mapValues{(_,v)->val a=IntArray(2);v.getLocationOnScreen(a);android.graphics.PointF(a[0]-pos[0]+v.width/2f,a[1]-pos[1]+v.height/2f)}
- val points=trail.toList();val lang=ru;val caps=shift;val unit=dp(30).toFloat();val generation=previewGeneration
+ val points=trail.toList();val lang=if(ru)Languages.selected(this).code else "en";val caps=shift;val unit=dp(30).toFloat();val generation=previewGeneration
  previewBusy=true;lastPreviewAt=SystemClock.uptimeMillis()
  previewWorker.execute{
  val words=try{decoder.decode(points,centers,lang,unit)}catch(_:Exception){emptyList<String>()}
@@ -133,7 +133,7 @@ class DualIme: InputMethodService() {
  stopLive();suggestions?.removeAllViews()
  val pos=IntArray(2);root.getLocationOnScreen(pos)
  val centers=swipeKeys.mapValues{(_,v)->val a=IntArray(2);v.getLocationOnScreen(a);android.graphics.PointF(a[0]-pos[0]+v.width/2f,a[1]-pos[1]+v.height/2f)}
- val path=trail.toList();val lang=ru;val unit=dp(30).toFloat();val caps=shift;val token=session
+ val path=trail.toList();val lang=if(ru)Languages.selected(this).code else "en";val unit=dp(30).toFloat();val caps=shift;val token=session
  clearTrail();pulse()
  if(shift==1){shift=0;autoShift=false;ui.post{if(token==session&&!touching)draw()}}
  worker.execute {
@@ -176,7 +176,7 @@ class DualIme: InputMethodService() {
  private val p by lazy {getSharedPreferences("keys",0)}
  private val redrawSettings=Runnable {if(::root.isInitialized&&isInputViewShown){hidePreview();lastSwipe="";draw();root.requestLayout()}}
  private val settingsListener=android.content.SharedPreferences.OnSharedPreferenceChangeListener {_,key->
- if(key in setOf("height","size","equal","dark","swipe","autocaps")){
+ if(key in setOf("height","size","equal","dark","swipe","autocaps","language")){
  if(::root.isInitialized){root.removeCallbacks(redrawSettings);root.postDelayed(redrawSettings,32L)}
  }
  }
@@ -211,7 +211,7 @@ class DualIme: InputMethodService() {
  val swipeLetter=swipeEnabled&&letter&&main.length==1&&main[0].isLetter()
  if(swipeLetter)swipeKeys[main[0].lowercaseChar()]=k
  var gesturing=false
- val space=main=="Русский"||main=="English"
+ val space=main==Languages.selected(this).name||main=="English"
  if(letter||digit)k.setPadding(dp(2),dp(2),dp(2),dp(2))
  fun label(s:String,sz:Float,c:Int){
  val t=object:View(this@DualIme){
@@ -276,7 +276,7 @@ class DualIme: InputMethodService() {
  val longTask=object:Runnable { override fun run(){
  if(!down)return
  if(main=="⌫"){if(repeats==0)microTick();longDone=true;action();repeats++;k.postDelayed(this,if(repeats>12)45L else if(repeats>5)75L else 120L)}
- else if(hold!=null){longDone=true;hidePreview();if(main=="Русский"||main=="English")confirmHold();hold()}
+ else if(hold!=null){longDone=true;hidePreview();if(main==Languages.selected(this).name||main=="English")confirmHold();hold()}
  } }
  k.addOnAttachStateChangeListener(object:View.OnAttachStateChangeListener {
  override fun onViewAttachedToWindow(v:View){}
@@ -335,13 +335,14 @@ class DualIme: InputMethodService() {
  fun deleteKey(r:LinearLayout){key(r,"⌫",weight=1.25f){session++;deferred.clear();lastSwipe="";suggestions?.removeAllViews();if(deleteSwipe())return@key;finishWord();pendingSpace=false;val ic=currentInputConnection;if(!ic?.getSelectedText(0).isNullOrEmpty())ic?.commitText("",1) else ic?.deleteSurroundingTextInCodePoints(1,0);refreshCaps()}}
  val digits=row();for(c in "1234567890")key(digits,c.toString()){send(c.toString())}
  if(symbols){for(line in listOf("!@#\$%^&*()","-_=+[]{}\\|","~`<>:;\"'/?")){val r=row();for(c in line)key(r,c.toString()){send(c.toString())};if(line.startsWith("~"))deleteKey(r)}}else{
- val en=listOf("qwertyuiop[","asdfghjkl;'","zxcvbnm,.");val rus=listOf("йцукенгшщзх","фывапролджэ","ячсмитьбю")
+ val en=listOf("qwertyuiop[","asdfghjkl;'","zxcvbnm,.");val rus=Languages.selected(this).rows
  for(i in en.indices){val r=row();if(i==2)shiftKey(r)
  for(j in en[i].indices){val a=en[i][j].toString();val b=rus[i][j].toString();val m=if(ru)b else a;val n=if(ru)a else b
- val hold:(()->Unit)?=when(b){"е"->if(ru) ({send(shifted("ё"))}) else null;"х"->({send(shifted(if(ru)"ъ" else "]"))});else->null}
+ val variants=if(ru)Languages.variants(Languages.selected(this).code,b[0]) else if(a=="[")"]" else ""
+ val hold:(()->Unit)?=if(variants.isEmpty())null else ({if(variants.length==1)send(shifted(variants)) else {val anchor=targets.entries.firstOrNull{it.value==shifted(m)}?.key; if(anchor!=null){val menu=PopupMenu(this,anchor);variants.forEach{ch->menu.menu.add(shifted(ch.toString()))};menu.setOnMenuItemClickListener{item->send(item.title.toString());true};menu.show()}}})
  key(r,shifted(m),shifted(n),hold=hold){send(shifted(m))}}
  if(i==2)deleteKey(r)}
  }
- val r=row();key(r,if(symbols)"ABC" else "?123",weight=1.5f){symbols=!symbols;draw()};key(r,",",weight=1f){send(",")};key(r,"🌐",weight=1f){ru=!ru;p.edit().putBoolean("ru",ru).apply();draw()};key(r,if(ru)"Русский" else "English",weight=3.9f,hold={getSystemService(android.view.inputmethod.InputMethodManager::class.java).showInputMethodPicker()}){send(" ")};key(r,".",weight=1f){send(".")};key(r,"↵",weight=2.0f){val a=currentInputEditorInfo?.imeOptions?.and(EditorInfo.IME_MASK_ACTION)?:0;if(a in 2..7 && ((currentInputEditorInfo?.imeOptions?:0) and EditorInfo.IME_FLAG_NO_ENTER_ACTION)==0)currentInputConnection?.performEditorAction(a) else send("\n")}
+ val r=row();key(r,if(symbols)"ABC" else "?123",weight=1.5f){symbols=!symbols;draw()};key(r,",",weight=1f){send(",")};key(r,"🌐",weight=1f){ru=!ru;p.edit().putBoolean("ru",ru).apply();draw()};key(r,if(ru)Languages.selected(this).name else "English",weight=3.9f,hold={getSystemService(android.view.inputmethod.InputMethodManager::class.java).showInputMethodPicker()}){send(" ")};key(r,".",weight=1f){send(".")};key(r,"↵",weight=2.0f){val a=currentInputEditorInfo?.imeOptions?.and(EditorInfo.IME_MASK_ACTION)?:0;if(a in 2..7 && ((currentInputEditorInfo?.imeOptions?:0) and EditorInfo.IME_FLAG_NO_ENTER_ACTION)==0)currentInputConnection?.performEditorAction(a) else send("\n")}
  }
 }
