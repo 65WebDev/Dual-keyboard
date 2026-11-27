@@ -187,11 +187,13 @@ class DualIme: InputMethodService() {
  override fun onStartInputView(info:EditorInfo?, restarting:Boolean){super.onStartInputView(info,restarting);ui.removeCallbacks(confirmSwipe);composingSwipe="";pendingSpace=false;session++;deferred.clear();ru=p.getBoolean("ru",true);shift=0;autoShift=false;symbols=false;if(wantsCaps()){shift=1;autoShift=true};if(::root.isInitialized)draw()}
  override fun onEvaluateFullscreenMode()=false
  private fun send(s:String){finishWord();val ic=currentInputConnection;val addSpace=pendingSpace&&s.firstOrNull()?.isLetterOrDigit()==true;pendingSpace=false;session++;deferred.clear();lastSwipe="";suggestions?.removeAllViews();ic?.commitText(if(addSpace)" "+s else s,1);if(shift==1&&s.any{it.isLetter()}){shift=0;autoShift=false;draw()}else if(s.any{it in ".!?…\n"}||s==" "){refreshCaps()}}
- private fun draw(){root.removeAllViews();targets.clear();swipeKeys.clear();clearTrail();trailDrawable?.let{root.overlay.remove(it)}; val dark=p.getBoolean("dark",true);val fg=if(dark)Color.WHITE else Color.rgb(30,33,38);val sub=if(dark)0xffb6c4d8.toInt() else 0xff53647a.toInt();root.setBackgroundColor(if(dark)0xff202124.toInt() else 0xffe1e3e8.toInt());root.setPadding(dp(2),dp(3),dp(2),dp(4)+navBottom)
+ private fun draw(){val retained=if(modifierDrag&&modifier=="?123")suggestions?.let{bar->(0 until bar.childCount).map{bar.getChildAt(it)}.also{bar.removeAllViews()}} else null;root.removeAllViews();targets.clear();swipeKeys.clear();clearTrail();trailDrawable?.let{root.overlay.remove(it)}; val dark=p.getBoolean("dark",true);val fg=if(dark)Color.WHITE else Color.rgb(30,33,38);val sub=if(dark)0xffb6c4d8.toInt() else 0xff53647a.toInt();root.setBackgroundColor(if(dark)0xff202124.toInt() else 0xffe1e3e8.toInt());root.setPadding(dp(2),dp(3),dp(2),dp(4)+navBottom)
  val swipeEnabled=p.getBoolean("swipe",true)&&!symbols&&((currentInputEditorInfo?.inputType?:0) and 0xfff) !in listOf(0x81,0x91,0xe1,0x12)
  suggestions=null
+ if(swipeEnabled||(modifierDrag&&modifier=="?123"&&p.getBoolean("swipe",true)&&((currentInputEditorInfo?.inputType?:0) and 0xfff) !in listOf(0x81,0x91,0xe1,0x12))){
+ suggestions=LinearLayout(this).also{bar->root.addView(bar,LinearLayout.LayoutParams(-1,dp(32)));retained?.forEach{bar.addView(it)}}
+ }
  if(swipeEnabled){
- suggestions=LinearLayout(this).also{root.addView(it,LinearLayout.LayoutParams(-1,dp(32)))}
  val d=object:android.graphics.drawable.Drawable(){
  private val paint=android.graphics.Paint(3).apply{color=0xff64b5f6.toInt();strokeWidth=dp(5).toFloat();strokeCap=android.graphics.Paint.Cap.ROUND;strokeJoin=android.graphics.Paint.Join.ROUND;style=android.graphics.Paint.Style.STROKE}
  override fun draw(c:android.graphics.Canvas){if(trail.size<2)return;val path=android.graphics.Path();path.moveTo(trail[0].x,trail[0].y);for(q in trail.drop(1))path.lineTo(q.x,q.y);c.drawPath(path,paint)}
