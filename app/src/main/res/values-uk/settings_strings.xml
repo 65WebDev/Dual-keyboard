@@ -1,0 +1,28 @@
+<resources>
+    <string name="settings_interface">Мова інтерфейсу</string>
+    <string name="settings_system">Мова системи</string>
+    <string name="settings_enable">1. Увімкнути клавіатуру</string>
+    <string name="settings_choose">2. Вибрати DualKey</string>
+    <string name="settings_theme">Тема застосунку та клавіатури</string>
+    <string name="settings_light">Світла</string>
+    <string name="settings_dark">Темна (Gboard)</string>
+    <string name="settings_caps">Автоматична велика літера</string>
+    <string name="settings_swipe">Введення жестами (експериментальне)</string>
+    <string name="settings_vibration">Вібрація</string>
+    <string name="settings_preview">Спливна літера</string>
+    <string name="settings_equal">Однаковий розмір літер</string>
+    <string name="settings_second">Постійна мова: English. Друга мова:</string>
+    <string name="settings_download">Завантажити словник</string>
+    <string name="settings_ready">Словник доступний офлайн</string>
+    <string name="settings_missing">Словник не завантажено</string>
+    <string name="settings_loading">Завантаження…</string>
+    <string name="settings_error">Помилка завантаження</string>
+    <string name="settings_source">Додаткові словники</string>
+    <string name="settings_strength">Інтенсивність вібрації, %</string>
+    <string name="settings_duration">Тривалість вібрації, мс</string>
+    <string name="settings_test">Перевірити вібрацію</string>
+    <string name="settings_height">Висота ряду клавіш, dp</string>
+    <string name="settings_size">Розмір літер, sp</string>
+    <string name="settings_note">Зміни видно одразу. Літери автоматично зменшуються, щоб уміститися на клавішах.</string>
+    <string name="settings_editor">Перевірка введення</string>
+</resources>

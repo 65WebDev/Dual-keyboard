@@ -1,0 +1,28 @@
+<resources>
+    <string name="settings_interface">Lingua dell’interfaccia</string>
+    <string name="settings_system">Lingua di sistema</string>
+    <string name="settings_enable">1. Attiva tastiera</string>
+    <string name="settings_choose">2. Seleziona DualKey</string>
+    <string name="settings_theme">Tema dell’app e della tastiera</string>
+    <string name="settings_light">Chiaro</string>
+    <string name="settings_dark">Scuro (Gboard)</string>
+    <string name="settings_caps">Maiuscole automatiche</string>
+    <string name="settings_swipe">Digitazione gestuale (sperimentale)</string>
+    <string name="settings_vibration">Vibrazione</string>
+    <string name="settings_preview">Anteprima tasti</string>
+    <string name="settings_equal">Lettere della stessa dimensione</string>
+    <string name="settings_second">Lingua fissa: English. Seconda lingua:</string>
+    <string name="settings_download">Scarica dizionario</string>
+    <string name="settings_ready">Dizionario disponibile offline</string>
+    <string name="settings_missing">Dizionario non scaricato</string>
+    <string name="settings_loading">Download in corso…</string>
+    <string name="settings_error">Download non riuscito</string>
+    <string name="settings_source">Dizionari aggiuntivi</string>
+    <string name="settings_strength">Intensità vibrazione, %</string>
+    <string name="settings_duration">Durata vibrazione, ms</string>
+    <string name="settings_test">Prova vibrazione</string>
+    <string name="settings_height">Altezza riga tasti, dp</string>
+    <string name="settings_size">Dimensione lettere, sp</string>
+    <string name="settings_note">Le modifiche sono immediate. Le lettere si adattano automaticamente ai tasti.</string>
+    <string name="settings_editor">Prova di digitazione</string>
+</resources>

@@ -1,0 +1,28 @@
+<resources>
+    <string name="settings_interface">Arayüz dili</string>
+    <string name="settings_system">Sistem dili</string>
+    <string name="settings_enable">1. Klavyeyi etkinleştir</string>
+    <string name="settings_choose">2. DualKey’i seç</string>
+    <string name="settings_theme">Uygulama ve klavye teması</string>
+    <string name="settings_light">Açık</string>
+    <string name="settings_dark">Koyu (Gboard)</string>
+    <string name="settings_caps">Otomatik büyük harf</string>
+    <string name="settings_swipe">Kaydırarak yazma (deneysel)</string>
+    <string name="settings_vibration">Titreşim</string>
+    <string name="settings_preview">Tuş önizlemesi</string>
+    <string name="settings_equal">Eşit harf boyutları</string>
+    <string name="settings_second">Sabit dil: English. İkinci dil:</string>
+    <string name="settings_download">Sözlüğü indir</string>
+    <string name="settings_ready">Sözlük çevrimdışı kullanılabilir</string>
+    <string name="settings_missing">Sözlük indirilmedi</string>
+    <string name="settings_loading">İndiriliyor…</string>
+    <string name="settings_error">İndirme başarısız</string>
+    <string name="settings_source">Ek sözlükler</string>
+    <string name="settings_strength">Titreşim şiddeti, %</string>
+    <string name="settings_duration">Titreşim süresi, ms</string>
+    <string name="settings_test">Titreşimi dene</string>
+    <string name="settings_height">Tuş sırası yüksekliği, dp</string>
+    <string name="settings_size">Harf boyutu, sp</string>
+    <string name="settings_note">Değişiklikler hemen görünür. Harfler tuşlara sığacak şekilde otomatik küçülür.</string>
+    <string name="settings_editor">Yazma testi</string>
+</resources>

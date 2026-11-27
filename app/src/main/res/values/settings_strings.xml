@@ -1,0 +1,28 @@
+<resources>
+    <string name="settings_interface">Interface language</string>
+    <string name="settings_system">System language</string>
+    <string name="settings_enable">1. Enable keyboard</string>
+    <string name="settings_choose">2. Select DualKey</string>
+    <string name="settings_theme">App and keyboard theme</string>
+    <string name="settings_light">Light</string>
+    <string name="settings_dark">Dark (Gboard)</string>
+    <string name="settings_caps">Automatic capitalization</string>
+    <string name="settings_swipe">Gesture typing (experimental)</string>
+    <string name="settings_vibration">Vibration</string>
+    <string name="settings_preview">Key preview</string>
+    <string name="settings_equal">Equal letter sizes</string>
+    <string name="settings_second">Permanent language: English. Second language:</string>
+    <string name="settings_download">Download dictionary</string>
+    <string name="settings_ready">Dictionary available offline</string>
+    <string name="settings_missing">Dictionary not downloaded</string>
+    <string name="settings_loading">Downloading…</string>
+    <string name="settings_error">Download failed</string>
+    <string name="settings_source">Additional dictionaries</string>
+    <string name="settings_strength">Vibration strength, %</string>
+    <string name="settings_duration">Vibration duration, ms</string>
+    <string name="settings_test">Test vibration</string>
+    <string name="settings_height">Key row height, dp</string>
+    <string name="settings_size">Letter size, sp</string>
+    <string name="settings_note">Changes appear immediately on the open keyboard. Letters shrink automatically to fit keys.</string>
+    <string name="settings_editor">Typing test</string>
+</resources>

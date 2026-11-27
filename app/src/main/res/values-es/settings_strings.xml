@@ -1,0 +1,28 @@
+<resources>
+    <string name="settings_interface">Idioma de la interfaz</string>
+    <string name="settings_system">Idioma del sistema</string>
+    <string name="settings_enable">1. Activar teclado</string>
+    <string name="settings_choose">2. Seleccionar DualKey</string>
+    <string name="settings_theme">Tema de la aplicación y del teclado</string>
+    <string name="settings_light">Claro</string>
+    <string name="settings_dark">Oscuro (Gboard)</string>
+    <string name="settings_caps">Mayúsculas automáticas</string>
+    <string name="settings_swipe">Escritura por gestos (experimental)</string>
+    <string name="settings_vibration">Vibración</string>
+    <string name="settings_preview">Vista previa de teclas</string>
+    <string name="settings_equal">Letras del mismo tamaño</string>
+    <string name="settings_second">Idioma fijo: English. Segundo idioma:</string>
+    <string name="settings_download">Descargar diccionario</string>
+    <string name="settings_ready">Diccionario disponible sin conexión</string>
+    <string name="settings_missing">Diccionario no descargado</string>
+    <string name="settings_loading">Descargando…</string>
+    <string name="settings_error">Error de descarga</string>
+    <string name="settings_source">Diccionarios adicionales</string>
+    <string name="settings_strength">Intensidad de vibración, %</string>
+    <string name="settings_duration">Duración de vibración, ms</string>
+    <string name="settings_test">Probar vibración</string>
+    <string name="settings_height">Altura de fila, dp</string>
+    <string name="settings_size">Tamaño de letras, sp</string>
+    <string name="settings_note">Los cambios se muestran de inmediato. Las letras se ajustan automáticamente a las teclas.</string>
+    <string name="settings_editor">Prueba de escritura</string>
+</resources>

@@ -1,0 +1,28 @@
+<resources>
+    <string name="settings_interface">Язык интерфейса</string>
+    <string name="settings_system">Язык системы</string>
+    <string name="settings_enable">1. Включить клавиатуру</string>
+    <string name="settings_choose">2. Выбрать DualKey</string>
+    <string name="settings_theme">Тема приложения и клавиатуры</string>
+    <string name="settings_light">Светлая</string>
+    <string name="settings_dark">Тёмная (Gboard)</string>
+    <string name="settings_caps">Автоматическая заглавная буква</string>
+    <string name="settings_swipe">Ввод свайпом (экспериментальный)</string>
+    <string name="settings_vibration">Вибрация</string>
+    <string name="settings_preview">Всплывающая буква</string>
+    <string name="settings_equal">Одинаковый размер букв</string>
+    <string name="settings_second">Постоянный язык: English. Второй язык:</string>
+    <string name="settings_download">Скачать словарь</string>
+    <string name="settings_ready">Словарь доступен офлайн</string>
+    <string name="settings_missing">Словарь не скачан</string>
+    <string name="settings_loading">Загрузка…</string>
+    <string name="settings_error">Ошибка загрузки</string>
+    <string name="settings_source">Дополнительные словари</string>
+    <string name="settings_strength">Интенсивность вибрации, %</string>
+    <string name="settings_duration">Длительность вибрации, мс</string>
+    <string name="settings_test">Проверить вибрацию</string>
+    <string name="settings_height">Высота ряда клавиш, dp</string>
+    <string name="settings_size">Размер букв, sp</string>
+    <string name="settings_note">Изменения видны сразу в открытой клавиатуре. Буквы автоматически уменьшаются, если не помещаются в клавишу.</string>
+    <string name="settings_editor">Проверка ввода</string>
+</resources>

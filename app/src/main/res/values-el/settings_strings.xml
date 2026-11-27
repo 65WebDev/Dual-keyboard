@@ -1,0 +1,28 @@
+<resources>
+    <string name="settings_interface">Γλώσσα διεπαφής</string>
+    <string name="settings_system">Γλώσσα συστήματος</string>
+    <string name="settings_enable">1. Ενεργοποίηση πληκτρολογίου</string>
+    <string name="settings_choose">2. Επιλογή DualKey</string>
+    <string name="settings_theme">Θέμα εφαρμογής και πληκτρολογίου</string>
+    <string name="settings_light">Φωτεινό</string>
+    <string name="settings_dark">Σκούρο (Gboard)</string>
+    <string name="settings_caps">Αυτόματα κεφαλαία</string>
+    <string name="settings_swipe">Πληκτρολόγηση με χειρονομίες (πειραματική)</string>
+    <string name="settings_vibration">Δόνηση</string>
+    <string name="settings_preview">Προεπισκόπηση πλήκτρου</string>
+    <string name="settings_equal">Ίδιο μέγεθος γραμμάτων</string>
+    <string name="settings_second">Σταθερή γλώσσα: English. Δεύτερη γλώσσα:</string>
+    <string name="settings_download">Λήψη λεξικού</string>
+    <string name="settings_ready">Λεξικό διαθέσιμο εκτός σύνδεσης</string>
+    <string name="settings_missing">Δεν έχει γίνει λήψη λεξικού</string>
+    <string name="settings_loading">Λήψη…</string>
+    <string name="settings_error">Αποτυχία λήψης</string>
+    <string name="settings_source">Πρόσθετα λεξικά</string>
+    <string name="settings_strength">Ένταση δόνησης, %</string>
+    <string name="settings_duration">Διάρκεια δόνησης, ms</string>
+    <string name="settings_test">Δοκιμή δόνησης</string>
+    <string name="settings_height">Ύψος σειράς πλήκτρων, dp</string>
+    <string name="settings_size">Μέγεθος γραμμάτων, sp</string>
+    <string name="settings_note">Οι αλλαγές εμφανίζονται αμέσως. Τα γράμματα προσαρμόζονται αυτόματα στα πλήκτρα.</string>
+    <string name="settings_editor">Δοκιμή πληκτρολόγησης</string>
+</resources>

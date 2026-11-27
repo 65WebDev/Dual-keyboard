@@ -1,0 +1,28 @@
+<resources>
+    <string name="settings_interface">Język interfejsu</string>
+    <string name="settings_system">Język systemu</string>
+    <string name="settings_enable">1. Włącz klawiaturę</string>
+    <string name="settings_choose">2. Wybierz DualKey</string>
+    <string name="settings_theme">Motyw aplikacji i klawiatury</string>
+    <string name="settings_light">Jasny</string>
+    <string name="settings_dark">Ciemny (Gboard)</string>
+    <string name="settings_caps">Automatyczne wielkie litery</string>
+    <string name="settings_swipe">Pisanie gestami (eksperymentalne)</string>
+    <string name="settings_vibration">Wibracje</string>
+    <string name="settings_preview">Podgląd klawisza</string>
+    <string name="settings_equal">Jednakowy rozmiar liter</string>
+    <string name="settings_second">Stały język: English. Drugi język:</string>
+    <string name="settings_download">Pobierz słownik</string>
+    <string name="settings_ready">Słownik dostępny offline</string>
+    <string name="settings_missing">Słownik niepobrany</string>
+    <string name="settings_loading">Pobieranie…</string>
+    <string name="settings_error">Błąd pobierania</string>
+    <string name="settings_source">Dodatkowe słowniki</string>
+    <string name="settings_strength">Intensywność wibracji, %</string>
+    <string name="settings_duration">Czas wibracji, ms</string>
+    <string name="settings_test">Testuj wibracje</string>
+    <string name="settings_height">Wysokość rzędu klawiszy, dp</string>
+    <string name="settings_size">Rozmiar liter, sp</string>
+    <string name="settings_note">Zmiany są widoczne od razu. Litery automatycznie dopasowują się do klawiszy.</string>
+    <string name="settings_editor">Test pisania</string>
+</resources>

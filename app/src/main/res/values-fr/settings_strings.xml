@@ -1,0 +1,28 @@
+<resources>
+    <string name="settings_interface">Langue de l’interface</string>
+    <string name="settings_system">Langue du système</string>
+    <string name="settings_enable">1. Activer le clavier</string>
+    <string name="settings_choose">2. Sélectionner DualKey</string>
+    <string name="settings_theme">Thème de l’application et du clavier</string>
+    <string name="settings_light">Clair</string>
+    <string name="settings_dark">Sombre (Gboard)</string>
+    <string name="settings_caps">Majuscule automatique</string>
+    <string name="settings_swipe">Saisie gestuelle (expérimentale)</string>
+    <string name="settings_vibration">Vibration</string>
+    <string name="settings_preview">Aperçu des touches</string>
+    <string name="settings_equal">Lettres de même taille</string>
+    <string name="settings_second">Langue fixe : English. Deuxième langue :</string>
+    <string name="settings_download">Télécharger le dictionnaire</string>
+    <string name="settings_ready">Dictionnaire disponible hors ligne</string>
+    <string name="settings_missing">Dictionnaire non téléchargé</string>
+    <string name="settings_loading">Téléchargement…</string>
+    <string name="settings_error">Échec du téléchargement</string>
+    <string name="settings_source">Dictionnaires supplémentaires</string>
+    <string name="settings_strength">Intensité de vibration, %</string>
+    <string name="settings_duration">Durée de vibration, ms</string>
+    <string name="settings_test">Tester la vibration</string>
+    <string name="settings_height">Hauteur des rangées, dp</string>
+    <string name="settings_size">Taille des lettres, sp</string>
+    <string name="settings_note">Les modifications sont immédiates. Les lettres sont redimensionnées pour tenir sur les touches.</string>
+    <string name="settings_editor">Test de saisie</string>
+</resources>
