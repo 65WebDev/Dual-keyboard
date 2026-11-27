@@ -52,10 +52,19 @@ class DualIme: InputMethodService() {
  fun bg(c:Int)=GradientDrawable().apply {cornerRadius=dp(if(accent||main=="?123"||main=="ABC") 30 else 6).toFloat();setColor(c)}
  k.background=android.graphics.drawable.StateListDrawable().apply {addState(intArrayOf(android.R.attr.state_pressed),bg(if(dark)0xff657da5.toInt() else 0xffa8c7fa.toInt()));addState(intArrayOf(),bg(normal))}
  var down=false;var longDone=false
- val longTask=Runnable { if(down && hold!=null){longDone=true;hidePreview();hold()} }
+ var repeats=0
+ val longTask=object:Runnable { override fun run(){
+ if(!down)return
+ if(main=="⌫"){longDone=true;action();repeats++;k.postDelayed(this,if(repeats>12)45L else if(repeats>5)75L else 120L)}
+ else if(hold!=null){longDone=true;hidePreview();hold()}
+ } }
+ k.addOnAttachStateChangeListener(object:View.OnAttachStateChangeListener {
+ override fun onViewAttachedToWindow(v:View){}
+ override fun onViewDetachedFromWindow(v:View){down=false;v.removeCallbacks(longTask)}
+ })
  k.setOnTouchListener { v,e ->
  when(e.actionMasked){
- MotionEvent.ACTION_DOWN -> {down=true;longDone=false;v.isPressed=true;if(p.getBoolean("haptic",true)){if(!KeyVibration.play(this,p))v.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)};if(hold!=null)v.postDelayed(longTask,ViewConfiguration.getLongPressTimeout().toLong())
+ MotionEvent.ACTION_DOWN -> {down=true;longDone=false;repeats=0;v.isPressed=true;if(p.getBoolean("haptic",true)){if(!KeyVibration.play(this,p))v.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)};if(main=="⌫")v.postDelayed(longTask,350L) else if(hold!=null)v.postDelayed(longTask,ViewConfiguration.getLongPressTimeout().toLong())
  if(p.getBoolean("preview",true)&&main.length==1&&(main[0].isLetterOrDigit()||alt.isNotEmpty())){
  hidePreview();val t=TextView(this).apply{text=main;textSize=32f;gravity=Gravity.CENTER;setTextColor(fg);background=bg(normal)}
  val w=maxOf(dp(48),v.width);val popup=PopupWindow(t,w,dp(64),false).apply{isTouchable=false;isClippingEnabled=true;elevation=dp(6).toFloat()};preview=popup;try { popup.showAsDropDown(v,(v.width-w)/2,-v.height-dp(66)) } catch (_:RuntimeException){hidePreview()}
@@ -78,6 +87,6 @@ class DualIme: InputMethodService() {
  key(r,shifted(m),shifted(n),hold=hold){send(shifted(m))}}
  if(i==2)deleteKey(r)}
  }
- val r=row();key(r,if(symbols)"ABC" else "?123",weight=1.5f){symbols=!symbols;draw()};key(r,",",weight=1f){send(",")};key(r,"🌐",weight=1f){ru=!ru;p.edit().putBoolean("ru",ru).apply();draw()};key(r,if(ru)"Русский" else "English",weight=3.9f){send(" ")};key(r,".",weight=1f){send(".")};key(r,"↵",weight=2.0f){val a=currentInputEditorInfo?.imeOptions?.and(EditorInfo.IME_MASK_ACTION)?:0;if(a in 2..7 && ((currentInputEditorInfo?.imeOptions?:0) and EditorInfo.IME_FLAG_NO_ENTER_ACTION)==0)currentInputConnection?.performEditorAction(a) else send("\n")}
+ val r=row();key(r,if(symbols)"ABC" else "?123",weight=1.5f){symbols=!symbols;draw()};key(r,",",weight=1f){send(",")};key(r,"🌐",weight=1f){ru=!ru;p.edit().putBoolean("ru",ru).apply();draw()};key(r,if(ru)"Русский" else "English",weight=3.9f,hold={getSystemService(android.view.inputmethod.InputMethodManager::class.java).showInputMethodPicker()}){send(" ")};key(r,".",weight=1f){send(".")};key(r,"↵",weight=2.0f){val a=currentInputEditorInfo?.imeOptions?.and(EditorInfo.IME_MASK_ACTION)?:0;if(a in 2..7 && ((currentInputEditorInfo?.imeOptions?:0) and EditorInfo.IME_FLAG_NO_ENTER_ACTION)==0)currentInputConnection?.performEditorAction(a) else send("\n")}
  }
 }
