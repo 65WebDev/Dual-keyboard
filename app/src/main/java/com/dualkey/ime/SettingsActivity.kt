@@ -17,7 +17,7 @@ class SettingsActivity: Activity() {
  window.decorView.setBackgroundColor(bg)
  val l=LinearLayout(this).apply { orientation=1; setPadding(24,64,24,24) }
  fun button(s:String, f:()->Unit) { l.addView(Button(this).apply { text=s; setOnClickListener { f() } }) }
- l.addView(TextView(this).apply { text="DualKey 0.7 — RU / EN"; textSize=24f })
+ l.addView(TextView(this).apply { text="DualKey 0.8 — RU / EN"; textSize=24f })
  button("1. Включить клавиатуру") { startActivity(Intent(Settings.ACTION_INPUT_METHOD_SETTINGS)) }
  button("2. Выбрать DualKey") { getSystemService(InputMethodManager::class.java).showInputMethodPicker() }
  fun toggle(s:String,k:String,d:Boolean) { l.addView(Switch(this).apply { text=s; if(night){thumbTintList=android.content.res.ColorStateList(arrayOf(intArrayOf(android.R.attr.state_checked),intArrayOf()),intArrayOf(0xffa8c7fa.toInt(),0xffa0a0a0.toInt()))}; isChecked=p.getBoolean(k,d); setOnCheckedChangeListener { _,v->p.edit().putBoolean(k,v).apply() } }) }
@@ -31,7 +31,7 @@ class SettingsActivity: Activity() {
   toggle("Вибрация","haptic",true); toggle("Всплывающая буква","preview",true); toggle("Одинаковый размер букв","equal",false)
  fun slider(s:String,k:String,min:Int,max:Int,d:Int) { val label=TextView(this); l.addView(label); val bar=SeekBar(this);bar.progressTintList=accent;bar.thumbTintList=accent; bar.max=max-min; bar.progress=p.getInt(k,d)-min; label.text="$s: ${bar.progress+min}"; l.addView(bar); bar.setOnSeekBarChangeListener(object:SeekBar.OnSeekBarChangeListener { override fun onProgressChanged(b:SeekBar,v:Int,u:Boolean){label.text="$s: ${v+min}";p.edit().putInt(k,v+min).apply()}; override fun onStartTrackingTouch(b:SeekBar){};override fun onStopTrackingTouch(b:SeekBar){} }) }
  slider("Интенсивность вибрации, %","vibration_strength",1,100,30); slider("Длительность вибрации, мс","vibration_duration",5,50,15)
- button("Проверить вибрацию") { if(p.getBoolean("haptic",true)) KeyVibration.play(this,p) }
+ button("Проверить вибрацию") { if(p.getBoolean("haptic",true) && !KeyVibration.play(this,p)) l.performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP) }
  slider("Высота клавиши","height",38,70,50); slider("Размер букв","size",16,26,21)
  l.addView(EditText(this).apply { id=701; hint="Проверка ввода"; minLines=2; backgroundTintList=accent }); setContentView(ScrollView(this).apply { id=702; setBackgroundColor(bg); addView(l) })
  }

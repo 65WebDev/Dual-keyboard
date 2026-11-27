@@ -35,17 +35,20 @@ class DualIme: InputMethodService() {
  if(accent){(k.getChildAt(k.childCount-1) as? TextView)?.setTextColor(0xff202124.toInt())}
  fun bg(c:Int)=GradientDrawable().apply {cornerRadius=dp(if(accent||main=="?123"||main=="ABC") 30 else 6).toFloat();setColor(c)}
  k.background=android.graphics.drawable.StateListDrawable().apply {addState(intArrayOf(android.R.attr.state_pressed),bg(if(dark)0xff657da5.toInt() else 0xffa8c7fa.toInt()));addState(intArrayOf(),bg(normal))}
+ var down=false;var longDone=false
+ val longTask=Runnable { if(down && hold!=null){longDone=true;hidePreview();hold()} }
  k.setOnTouchListener { v,e ->
  when(e.actionMasked){
- MotionEvent.ACTION_DOWN -> {v.isPressed=true;if(p.getBoolean("haptic",true))KeyVibration.play(this,p)
+ MotionEvent.ACTION_DOWN -> {down=true;longDone=false;v.isPressed=true;if(p.getBoolean("haptic",true)){if(!KeyVibration.play(this,p))v.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)};if(hold!=null)v.postDelayed(longTask,ViewConfiguration.getLongPressTimeout().toLong())
  if(p.getBoolean("preview",true)&&main.length==1&&(main[0].isLetterOrDigit()||alt.isNotEmpty())){
  hidePreview();val t=TextView(this).apply{text=main;textSize=32f;gravity=Gravity.CENTER;setTextColor(fg);background=bg(normal)}
- val w=maxOf(dp(48),v.width);val popup=PopupWindow(t,w,dp(64),false).apply{isTouchable=false;isClippingEnabled=true;elevation=dp(6).toFloat()};preview=popup;popup.showAsDropDown(v,(v.width-w)/2,-v.height-dp(66))
+ val w=maxOf(dp(48),v.width);val popup=PopupWindow(t,w,dp(64),false).apply{isTouchable=false;isClippingEnabled=true;elevation=dp(6).toFloat()};preview=popup;try { popup.showAsDropDown(v,(v.width-w)/2,-v.height-dp(66)) } catch (_:RuntimeException){hidePreview()}
  }}
- MotionEvent.ACTION_UP,MotionEvent.ACTION_CANCEL -> {hidePreview();v.isPressed=false}
- };false }
+ MotionEvent.ACTION_UP -> {val click=down&&!longDone;down=false;v.removeCallbacks(longTask);hidePreview();v.isPressed=false;if(click)v.performClick()}
+ MotionEvent.ACTION_CANCEL -> {down=false;v.removeCallbacks(longTask);hidePreview();v.isPressed=false}
+ };true }
  k.setOnClickListener {action()}
- if(hold!=null)k.setOnLongClickListener {hidePreview();hold();true}
+ 
  }
  fun shifted(s:String)=if(shift>0)s.uppercase() else s
  fun shiftKey(r:LinearLayout){key(r,if(shift==2)"⇪" else "⇧",weight=1.25f){val now=SystemClock.uptimeMillis();shift=if(shift==1&&now-lastShift<400)2 else if(shift>0)0 else 1;lastShift=now;draw()}}
