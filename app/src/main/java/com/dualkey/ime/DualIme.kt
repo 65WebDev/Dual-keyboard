@@ -10,6 +10,31 @@ class DualIme: InputMethodService() {
  private var ru=true; private var shift=0; private var symbols=false; private var lastShift=0L
  private lateinit var root:LinearLayout
  private var navBottom=0
+ private val previewWorker=java.util.concurrent.Executors.newSingleThreadExecutor()
+ private var previewBusy=false
+ private var previewGeneration=0
+ private var lastPreviewAt=0L
+ private var liveGesture=false
+ private fun stopLive(){liveGesture=false;previewGeneration++}
+ private fun livePreview(){
+ if(!liveGesture||previewBusy||trail.size<2||SystemClock.uptimeMillis()-lastPreviewAt<150)return
+ val pos=IntArray(2);root.getLocationOnScreen(pos)
+ val centers=swipeKeys.mapValues{(_,v)->val a=IntArray(2);v.getLocationOnScreen(a);android.graphics.PointF(a[0]-pos[0]+v.width/2f,a[1]-pos[1]+v.height/2f)}
+ val points=trail.toList();val lang=ru;val caps=shift;val unit=dp(30).toFloat();val generation=previewGeneration
+ previewBusy=true;lastPreviewAt=SystemClock.uptimeMillis()
+ previewWorker.execute{
+ val words=try{decoder.decode(points,centers,lang,unit)}catch(_:Exception){emptyList<String>()}
+ ui.post{
+ previewBusy=false
+ if(liveGesture&&generation==previewGeneration&&isInputViewShown){
+ suggestions?.let{bar->bar.removeAllViews();for(word in words){
+ val label=if(caps==2)word.uppercase() else if(caps==1)word.replaceFirstChar{it.uppercase()} else word
+ bar.addView(TextView(this).apply{text=label;gravity=Gravity.CENTER;textSize=16f;setTextColor(if(p.getBoolean("dark",true))Color.WHITE else Color.BLACK)},LinearLayout.LayoutParams(0,-1,1f))
+ }}
+ }
+ }
+ }
+ }
  private val worker=java.util.concurrent.Executors.newSingleThreadExecutor()
  private val ui=android.os.Handler(android.os.Looper.getMainLooper())
  private var session=0
@@ -81,6 +106,7 @@ class DualIme: InputMethodService() {
  private fun clearTrail(){trail.clear();trailDrawable?.invalidateSelf()}
  private fun swipePoint(x:Float,y:Float){val pos=IntArray(2);root.getLocationOnScreen(pos);val q=android.graphics.PointF(x-pos[0],y-pos[1]);if(trail.isEmpty()||android.graphics.PointF.length(q.x-trail.last().x,q.y-trail.last().y)>=dp(2)){if(trail.size<512)trail.add(q);trailDrawable?.invalidateSelf()}}
  private fun finishSwipe(){
+ stopLive();suggestions?.removeAllViews()
  val pos=IntArray(2);root.getLocationOnScreen(pos)
  val centers=swipeKeys.mapValues{(_,v)->val a=IntArray(2);v.getLocationOnScreen(a);android.graphics.PointF(a[0]-pos[0]+v.width/2f,a[1]-pos[1]+v.height/2f)}
  val path=trail.toList();val lang=ru;val unit=dp(30).toFloat();val caps=shift;val token=session
@@ -101,7 +127,7 @@ class DualIme: InputMethodService() {
  val prefix=if(prev?.isLetterOrDigit()==true)" " else ""
  val inserted=prefix+options.first()+" "
  ic.commitText(inserted,1);lastSwipe=inserted
- suggestions?.let{bar->bar.removeAllViews();for(word in options){bar.addView(TextView(this).apply{text=word;gravity=Gravity.CENTER;textSize=16f;setTextColor(if(p.getBoolean("dark",true))Color.WHITE else Color.BLACK);setOnClickListener{
+ if(!liveGesture)suggestions?.let{bar->bar.removeAllViews();for(word in options){bar.addView(TextView(this).apply{text=word;gravity=Gravity.CENTER;textSize=16f;setTextColor(if(p.getBoolean("dark",true))Color.WHITE else Color.BLACK);setOnClickListener{
  pulse();val conn=currentInputConnection
  if(lastSwipe.isNotEmpty()&&conn?.getTextBeforeCursor(lastSwipe.length,0)?.toString()==lastSwipe){conn.deleteSurroundingText(lastSwipe.length,0);conn.commitText(prefix+word+" ",1)}
  lastSwipe="";bar.removeAllViews()
@@ -110,7 +136,7 @@ class DualIme: InputMethodService() {
 
  private var preview:PopupWindow?=null
  private fun hidePreview(){preview?.dismiss();preview=null}
- override fun onFinishInputView(finishingInput:Boolean){session++;deferred.clear();touching=false;modifierDrag=false;clearTrail();lastSwipe="";hidePreview();super.onFinishInputView(finishingInput)}
+ override fun onFinishInputView(finishingInput:Boolean){stopLive();session++;deferred.clear();touching=false;modifierDrag=false;clearTrail();lastSwipe="";hidePreview();super.onFinishInputView(finishingInput)}
  private val p by lazy {getSharedPreferences("keys",0)}
  private val redrawSettings=Runnable {if(::root.isInitialized&&isInputViewShown){hidePreview();lastSwipe="";draw();root.requestLayout()}}
  private val settingsListener=android.content.SharedPreferences.OnSharedPreferenceChangeListener {_,key->
@@ -119,7 +145,7 @@ class DualIme: InputMethodService() {
  }
  }
  override fun onCreate(){super.onCreate();p.registerOnSharedPreferenceChangeListener(settingsListener);worker.execute{decoder.warmUp()}}
- override fun onDestroy(){p.unregisterOnSharedPreferenceChangeListener(settingsListener);if(::root.isInitialized)root.removeCallbacks(redrawSettings);worker.shutdownNow();ui.removeCallbacksAndMessages(null);super.onDestroy()}
+ override fun onDestroy(){p.unregisterOnSharedPreferenceChangeListener(settingsListener);if(::root.isInitialized)root.removeCallbacks(redrawSettings);stopLive();previewWorker.shutdownNow();worker.shutdownNow();ui.removeCallbacksAndMessages(null);super.onDestroy()}
  private fun dp(n:Int)=(n*resources.displayMetrics.density+0.5f).toInt()
  override fun onCreateInputView():View { root=KeyboardRoot().apply { orientation=1 }; root.setOnApplyWindowInsetsListener { v,insets -> navBottom=if(android.os.Build.VERSION.SDK_INT>=30) insets.getInsetsIgnoringVisibility(WindowInsets.Type.navigationBars()).bottom else insets.stableInsetBottom; v.setPadding(dp(2),dp(3),dp(2),dp(4)+navBottom); insets }; draw(); root.requestApplyInsets(); return root }
  override fun onStartInputView(info:EditorInfo?, restarting:Boolean){super.onStartInputView(info,restarting);session++;deferred.clear();ru=p.getBoolean("ru",true);shift=0;autoShift=false;symbols=false;if(wantsCaps()){shift=1;autoShift=true};if(::root.isInitialized)draw()}
@@ -220,7 +246,7 @@ class DualIme: InputMethodService() {
  })
  k.setOnTouchListener { v,e ->
  when(e.actionMasked){
- MotionEvent.ACTION_DOWN -> {down=true;longDone=false;sliding=false;gesturing=false;if(swipeLetter){clearTrail();swipePoint(e.rawX,e.rawY)};startX=e.rawX;startY=e.rawY;cursorX=startX;repeats=0;v.isPressed=true;if(p.getBoolean("haptic",true)){if(!KeyVibration.play(this,p))v.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)};if(main=="⌫")v.postDelayed(longTask,350L) else if(hold!=null)v.postDelayed(longTask,ViewConfiguration.getLongPressTimeout().toLong())
+ MotionEvent.ACTION_DOWN -> {down=true;longDone=false;sliding=false;gesturing=false;if(swipeLetter){stopLive();clearTrail();swipePoint(e.rawX,e.rawY)};startX=e.rawX;startY=e.rawY;cursorX=startX;repeats=0;v.isPressed=true;if(p.getBoolean("haptic",true)){if(!KeyVibration.play(this,p))v.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)};if(main=="⌫")v.postDelayed(longTask,350L) else if(hold!=null)v.postDelayed(longTask,ViewConfiguration.getLongPressTimeout().toLong())
  if(p.getBoolean("preview",true)&&main.length==1&&(main[0].isLetterOrDigit()||alt.isNotEmpty())){
  hidePreview();val t=TextView(this).apply{text=main;textSize=32f;gravity=Gravity.CENTER;setTextColor(fg);background=bg(normal)}
  val w=maxOf(dp(48),v.width);val popup=PopupWindow(t,w,dp(64),false).apply{isTouchable=false;isClippingEnabled=true;elevation=dp(6).toFloat()};preview=popup;try { popup.showAsDropDown(v,(v.width-w)/2,-v.height-dp(66)) } catch (_:RuntimeException){hidePreview()}
@@ -228,8 +254,8 @@ class DualIme: InputMethodService() {
  MotionEvent.ACTION_MOVE -> {
  if(swipeLetter&&down&&(!longDone||gesturing)){
  val distance=android.graphics.PointF.length(e.rawX-startX,e.rawY-startY)
- if(!gesturing&&distance>=dp(14)){gesturing=true;longDone=true;v.removeCallbacks(longTask);hidePreview();v.isPressed=false;pulse()}
- if(gesturing){for(i in 0 until e.historySize)swipePoint(e.getHistoricalX(i)+e.rawX-e.x,e.getHistoricalY(i)+e.rawY-e.y);swipePoint(e.rawX,e.rawY)}
+ if(!gesturing&&distance>=dp(14)){gesturing=true;liveGesture=true;previewGeneration++;lastPreviewAt=0L;lastSwipe="";suggestions?.removeAllViews();longDone=true;v.removeCallbacks(longTask);hidePreview();v.isPressed=false;pulse()}
+ if(gesturing){for(i in 0 until e.historySize)swipePoint(e.getHistoricalX(i)+e.rawX-e.x,e.getHistoricalY(i)+e.rawY-e.y);swipePoint(e.rawX,e.rawY);livePreview()}
  }
 
  if(space&&down&&(!longDone||sliding)){
@@ -261,7 +287,7 @@ class DualIme: InputMethodService() {
  }
  }
  MotionEvent.ACTION_UP -> {val click=down&&!longDone;if(down&&main=="⌫"&&repeats>0)microTick();down=false;v.removeCallbacks(longTask);hidePreview();v.isPressed=false;if(gesturing){swipePoint(e.rawX,e.rawY);finishSwipe()}else{if(swipeLetter)clearTrail();if(click)v.performClick()}}
- MotionEvent.ACTION_CANCEL -> {if(swipeLetter)clearTrail();down=false;v.removeCallbacks(longTask);hidePreview();v.isPressed=false}
+ MotionEvent.ACTION_CANCEL -> {if(swipeLetter){stopLive();clearTrail();if(gesturing)suggestions?.removeAllViews()};down=false;v.removeCallbacks(longTask);hidePreview();v.isPressed=false}
  };true }
  k.setOnClickListener {action()}
  
