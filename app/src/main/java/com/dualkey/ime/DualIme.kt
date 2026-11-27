@@ -30,7 +30,7 @@ class DualIme: InputMethodService() {
  k.background=android.graphics.drawable.StateListDrawable().apply {addState(intArrayOf(android.R.attr.state_pressed),bg(if(dark)0xff758bb0.toInt() else 0xffa8c7fa.toInt()));addState(intArrayOf(),bg(normal))}
  k.setOnTouchListener { v,e ->
  when(e.actionMasked){
- MotionEvent.ACTION_DOWN -> {v.isPressed=true;if(p.getBoolean("haptic",true))v.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+ MotionEvent.ACTION_DOWN -> {v.isPressed=true;if(p.getBoolean("haptic",true))KeyVibration.play(this,p)
  if(p.getBoolean("preview",true)&&main.length==1&&(main[0].isLetterOrDigit()||alt.isNotEmpty())){
  hidePreview();val t=TextView(this).apply{text=main;textSize=32f;gravity=Gravity.CENTER;setTextColor(fg);background=bg(normal)}
  val w=maxOf(dp(48),v.width);val popup=PopupWindow(t,w,dp(64),false).apply{isTouchable=false;isClippingEnabled=true;elevation=dp(6).toFloat()};preview=popup;popup.showAsDropDown(v,(v.width-w)/2,-v.height-dp(66))
