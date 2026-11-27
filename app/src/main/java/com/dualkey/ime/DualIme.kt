@@ -94,12 +94,23 @@ class DualIme: InputMethodService() {
  val space=main=="Русский"||main=="English"
  if(letter||digit)k.setPadding(dp(2),dp(2),dp(2),dp(2))
  fun label(s:String,sz:Float,c:Int){
- val t=TextView(this).apply{text=s;textSize=sz;setTextColor(c);gravity=Gravity.CENTER;includeFontPadding=false;maxLines=1}
- if(letter||digit){
- val maxPx=android.util.TypedValue.applyDimension(android.util.TypedValue.COMPLEX_UNIT_SP,sz,resources.displayMetrics).toInt().coerceAtLeast(1)
- t.setAutoSizeTextTypeUniformWithConfiguration(1,maxPx,1,android.util.TypedValue.COMPLEX_UNIT_PX)
- k.addView(t,LinearLayout.LayoutParams(-1,0,if(letter&&s==alt&&!p.getBoolean("equal",false))0.85f else 1.15f))
- }else k.addView(t)
+ val t=object:View(this@DualIme){
+ private val paint=android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply{color=c;textAlign=android.graphics.Paint.Align.CENTER;typeface=android.graphics.Typeface.DEFAULT}
+ override fun onDraw(canvas:android.graphics.Canvas){
+ super.onDraw(canvas)
+ if(width<=0||height<=0)return
+ val requested=android.util.TypedValue.applyDimension(android.util.TypedValue.COMPLEX_UNIT_SP,sz,resources.displayMetrics)
+ paint.textSize=requested
+ val bounds=android.graphics.Rect()
+ paint.getTextBounds(s,0,s.length,bounds)
+ val scale=minOf(1f,(width-dp(2)).coerceAtLeast(1)/paint.measureText(s).coerceAtLeast(1f),(height-dp(2)).coerceAtLeast(1)/bounds.height().coerceAtLeast(1).toFloat())
+ paint.textSize=requested*scale
+ paint.getTextBounds(s,0,s.length,bounds)
+ canvas.drawText(s,width/2f,height/2f-(bounds.top+bounds.bottom)/2f,paint)
+ }
+ }
+ if(letter||digit)k.addView(t,LinearLayout.LayoutParams(-1,0,if(letter&&s==alt&&!p.getBoolean("equal",false))0.85f else 1.15f))
+ else k.addView(t,LinearLayout.LayoutParams(-1,-1))
  }
  if(main=="↵" || main=="⇧" || main=="⇪"){
  k.addView(object:View(this@DualIme){
