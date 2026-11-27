@@ -276,7 +276,7 @@ class DualIme: InputMethodService() {
  val longTask=object:Runnable { override fun run(){
  if(!down)return
  if(main=="⌫"){if(repeats==0)microTick();longDone=true;action();repeats++;k.postDelayed(this,if(repeats>12)45L else if(repeats>5)75L else 120L)}
- else if(hold!=null){longDone=true;hidePreview();if(main==Languages.selected(this).name||main=="English")confirmHold();hold()}
+ else if(hold!=null){longDone=true;hidePreview();if(main==Languages.selected(this@DualIme).name||main=="English")confirmHold();hold()}
  } }
  k.addOnAttachStateChangeListener(object:View.OnAttachStateChangeListener {
  override fun onViewAttachedToWindow(v:View){}
@@ -339,7 +339,7 @@ class DualIme: InputMethodService() {
  for(i in en.indices){val r=row();if(i==2)shiftKey(r)
  for(j in en[i].indices){val a=en[i][j].toString();val b=rus[i][j].toString();val m=if(ru)b else a;val n=if(ru)a else b
  val variants=if(ru)Languages.variants(Languages.selected(this).code,b[0]) else if(a=="[")"]" else ""
- val hold:(()->Unit)?=if(variants.isEmpty())null else ({if(variants.length==1)send(shifted(variants)) else {val anchor=targets.entries.firstOrNull{it.value==shifted(m)}?.key; if(anchor!=null){val menu=PopupMenu(this,anchor);variants.forEach{ch->menu.menu.add(shifted(ch.toString()))};menu.setOnMenuItemClickListener{item->send(item.title.toString());true};menu.show()}}})
+ val hold:(()->Unit)?=if(variants.isEmpty())null else ({if(variants.length==1)send(shifted(variants)) else {val anchor=targets.entries.firstOrNull{it.value==shifted(m)}?.key; if(anchor!=null){val menu=PopupMenu(this,anchor);variants.forEach{ch->menu.menu.add(shifted(ch.toString()))};menu.setOnMenuItemClickListener{item->send(item.title.toString());true};menu.show()};Unit}})
  key(r,shifted(m),shifted(n),hold=hold){send(shifted(m))}}
  if(i==2)deleteKey(r)}
  }

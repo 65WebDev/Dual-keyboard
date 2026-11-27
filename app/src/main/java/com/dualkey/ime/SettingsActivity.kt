@@ -18,7 +18,7 @@ class SettingsActivity: Activity() {
  window.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
  val l=LinearLayout(this).apply { orientation=1; setPadding(24,16,24,24) }
  fun button(s:String, f:()->Unit) { l.addView(Button(this).apply { text=s; setOnClickListener { f() } }) }
- l.addView(TextView(this).apply { text="DualKey 0.31 — EN +"; textSize=24f })
+ l.addView(TextView(this).apply { text="DualKey 0.32 — EN +"; textSize=24f })
  button("1. Включить клавиатуру") { startActivity(Intent(Settings.ACTION_INPUT_METHOD_SETTINGS)) }
  button("2. Выбрать DualKey") { getSystemService(InputMethodManager::class.java).showInputMethodPicker() }
  fun toggle(s:String,k:String,d:Boolean) { l.addView(Switch(this).apply { text=s; if(night){thumbTintList=android.content.res.ColorStateList(arrayOf(intArrayOf(android.R.attr.state_checked),intArrayOf()),intArrayOf(0xffa8c7fa.toInt(),0xffa0a0a0.toInt()))}; isChecked=p.getBoolean(k,d); setOnCheckedChangeListener { _,v->p.edit().putBoolean(k,v).apply() } }) }
