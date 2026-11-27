@@ -52,11 +52,12 @@ class DualIme: InputMethodService() {
  fun bg(c:Int)=GradientDrawable().apply {cornerRadius=dp(if(accent||main=="?123"||main=="ABC") 30 else 6).toFloat();setColor(c)}
  k.background=android.graphics.drawable.StateListDrawable().apply {addState(intArrayOf(android.R.attr.state_pressed),bg(if(dark)0xff657da5.toInt() else 0xffa8c7fa.toInt()));addState(intArrayOf(),bg(normal))}
  var down=false;var longDone=false
+ fun confirmHold(){if(p.getBoolean("haptic",true)&&!KeyVibration.play(this,p,true))k.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)}
  var repeats=0
  val longTask=object:Runnable { override fun run(){
  if(!down)return
- if(main=="⌫"){longDone=true;action();repeats++;k.postDelayed(this,if(repeats>12)45L else if(repeats>5)75L else 120L)}
- else if(hold!=null){longDone=true;hidePreview();hold()}
+ if(main=="⌫"){if(repeats==0)confirmHold();longDone=true;action();repeats++;k.postDelayed(this,if(repeats>12)45L else if(repeats>5)75L else 120L)}
+ else if(hold!=null){longDone=true;hidePreview();if(main=="Русский"||main=="English")confirmHold();hold()}
  } }
  k.addOnAttachStateChangeListener(object:View.OnAttachStateChangeListener {
  override fun onViewAttachedToWindow(v:View){}
