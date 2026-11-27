@@ -47,14 +47,15 @@ class DualIme: InputMethodService() {
  val path=android.graphics.Path()
  if(main=="↵"){path.moveTo(27f,7f);path.lineTo(27f,17f);path.lineTo(5f,17f);path.moveTo(13f,9f);path.lineTo(5f,17f);path.lineTo(13f,25f)}
  else {path.moveTo(3f,15f);path.lineTo(16f,3f);path.lineTo(29f,15f);path.lineTo(22f,15f);path.lineTo(22f,25f);path.lineTo(10f,25f);path.lineTo(10f,15f);path.close();if(shift>0)paint.style=android.graphics.Paint.Style.FILL}
+ if(main=="⇧")c.translate(0f,2f)
  c.drawPath(path,paint)
  if(main=="⇪"){paint.style=android.graphics.Paint.Style.STROKE;c.drawLine(10f,29f,22f,29f,paint)}
  c.restore()
  }
- },LinearLayout.LayoutParams(dp(if(main=="↵")32 else 25),dp(if(main=="↵")32 else 25)))
+ },LinearLayout.LayoutParams(dp(if(main=="↵")29 else 25),dp(if(main=="↵")32 else 25)))
  }else if(main=="🌐"){k.addView(object:View(this@DualIme){
  override fun onDraw(c:android.graphics.Canvas){super.onDraw(c);val p=android.graphics.Paint(3).apply{color=fg;style=android.graphics.Paint.Style.STROKE;strokeWidth=dp(2).toFloat()};val x=width/2f;val y=height/2f;val a=minOf(width,height)*0.40f;c.drawCircle(x,y,a,p);c.drawOval(x-a*0.46f,y-a,x+a*0.46f,y+a,p);c.drawLine(x-a,y,x+a,y,p);c.drawLine(x-a*0.85f,y-a*0.5f,x+a*0.85f,y-a*0.5f,p);c.drawLine(x-a*0.85f,y+a*0.5f,x+a*0.85f,y+a*0.5f,p)}
- },LinearLayout.LayoutParams(dp(27),dp(27)))}else{if(alt.isNotEmpty())label(alt,if(p.getBoolean("equal",false))size else size*0.58f,sub);label(main,if(digit)size*1.15f else if(main.length>3)size*0.78f else size,fg)}
+ },LinearLayout.LayoutParams(dp(27),dp(27)))}else{if(alt.isNotEmpty())label(alt,if(p.getBoolean("equal",false))size else size*0.58f,sub);label(main,if(digit)size*1.035f else if(main.length>3)size*0.78f else size,fg)}
  val accent=main=="↵"
  val activeShift=(main=="⇧"||main=="⇪")&&shift>0
  val special=main in listOf("⇧","⇪","?123","ABC","🌐","⌫")
@@ -65,6 +66,7 @@ class DualIme: InputMethodService() {
  var down=false;var longDone=false
  var sliding=false;var startX=0f;var startY=0f;var cursorX=0f
  fun confirmHold(){if(p.getBoolean("haptic",true)&&!KeyVibration.play(this,p,true))k.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)}
+ fun microTick(){if(p.getBoolean("haptic",true))KeyVibration.play(this,p,micro=true)}
  var repeats=0
  val longTask=object:Runnable { override fun run(){
  if(!down)return
@@ -93,13 +95,22 @@ class DualIme: InputMethodService() {
  val count=((e.rawX-cursorX)/step).toInt().coerceIn(-40,40)
  if(count!=0){
  val code=if(count<0)KeyEvent.KEYCODE_DPAD_LEFT else KeyEvent.KEYCODE_DPAD_RIGHT
- repeat(kotlin.math.abs(count)){currentInputConnection?.sendKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN,code));currentInputConnection?.sendKeyEvent(KeyEvent(KeyEvent.ACTION_UP,code))}
+ repeat(kotlin.math.abs(count)){
+ val ic=currentInputConnection
+ if(ic!=null){
+ val before=ic.getExtractedText(android.view.inputmethod.ExtractedTextRequest(),0)
+ val accepted=ic.sendKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN,code))
+ ic.sendKeyEvent(KeyEvent(KeyEvent.ACTION_UP,code))
+ val after=ic.getExtractedText(android.view.inputmethod.ExtractedTextRequest(),0)
+ if(accepted&&(before==null||after==null||before.selectionStart!=after.selectionStart||before.selectionEnd!=after.selectionEnd))microTick()
+ }
+ }
  cursorX+=count*step
  }
  }
  }
  }
- MotionEvent.ACTION_UP -> {val click=down&&!longDone;down=false;v.removeCallbacks(longTask);hidePreview();v.isPressed=false;if(click)v.performClick()}
+ MotionEvent.ACTION_UP -> {val click=down&&!longDone;if(down&&main=="⌫"&&repeats>0)microTick();down=false;v.removeCallbacks(longTask);hidePreview();v.isPressed=false;if(click)v.performClick()}
  MotionEvent.ACTION_CANCEL -> {down=false;v.removeCallbacks(longTask);hidePreview();v.isPressed=false}
  };true }
  k.setOnClickListener {action()}
