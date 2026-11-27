@@ -228,8 +228,8 @@ class DualIme: InputMethodService() {
  paint.textSize=requested*scale
  paint.getTextBounds(s,0,s.length,bounds)
  val fm=paint.fontMetrics
- val punctuationOffset=when(s){".",","->height*0.23f;"~","\u0060","'","\u0022"->-height*0.23f;else->0f}
- val baseline=if(letter)height/2f-(fm.ascent+fm.descent)/2f else height/2f-(bounds.top+bounds.bottom)/2f
+ val punctuationOffset=when(s){".",","->height*0.23f;"~","\u0060","'","\u0022","*","^"->-height*0.23f;else->0f}
+ val baseline=if(s==":"||s==";"){val colon=android.graphics.Rect();paint.getTextBounds(":",0,1,colon);height/2f-(colon.top+colon.bottom)/2f+colon.top-bounds.top}else if(letter)height/2f-(fm.ascent+fm.descent)/2f else height/2f-(bounds.top+bounds.bottom)/2f
  canvas.drawText(s,width/2f,(baseline+punctuationOffset).coerceIn(-bounds.top.toFloat(),maxOf(-bounds.top.toFloat(),height-bounds.bottom.toFloat())),paint)
  }
  }
