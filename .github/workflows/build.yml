@@ -1,5 +1,7 @@
 name: Build APK
 on: [push, workflow_dispatch]
+permissions:
+  contents: write
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -17,3 +19,18 @@ jobs:
         with:
           name: DualKey-0.6-APK
           path: app/build/outputs/apk/debug/app-debug.apk
+      - name: Publish versioned APK
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION=$(sed -n "s/.*versionName '\([^']*\)'.*/\1/p" app/build.gradle)
+          test -n "$VERSION"
+          TAG="v$VERSION"
+          APK="DualKey-$VERSION.apk"
+          cp app/build/outputs/apk/debug/app-debug.apk "$APK"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$APK" --clobber
+          else
+            gh release create "$TAG" "$APK" --target "$GITHUB_SHA" --title "DualKey $VERSION" --generate-notes
+          fi
