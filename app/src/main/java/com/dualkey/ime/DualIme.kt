@@ -20,6 +20,7 @@ class DualIme: InputMethodService() {
  private var modifierX=0f
  private var modifierY=0f
  private var modifierDrag=false
+ private var savedRu=true
  private var savedShift=0
  private var savedAuto=false
  private fun hit(x:Float,y:Float):String?=targets.entries.firstOrNull{(v,_)->val a=IntArray(2);v.getLocationOnScreen(a);x>=a[0]&&x<a[0]+v.width&&y>=a[1]&&y<a[1]+v.height}?.value
@@ -27,12 +28,12 @@ class DualIme: InputMethodService() {
  private fun flush(){val jobs=deferred.toList();deferred.clear();jobs.forEach{it()}}
  private inner class KeyboardRoot:LinearLayout(this@DualIme){
  override fun dispatchTouchEvent(e:MotionEvent):Boolean{
- if(e.actionMasked==MotionEvent.ACTION_DOWN){touching=true;modifier=hit(e.rawX,e.rawY).orEmpty().takeIf{it in listOf("⇧","⇪","?123")}.orEmpty();modifierX=e.rawX;modifierY=e.rawY;modifierDrag=false}
+ if(e.actionMasked==MotionEvent.ACTION_DOWN){touching=true;modifier=hit(e.rawX,e.rawY).orEmpty().takeIf{it in listOf("⇧","⇪","?123","🌐")}.orEmpty();modifierX=e.rawX;modifierY=e.rawY;modifierDrag=false}
  if(e.actionMasked==MotionEvent.ACTION_MOVE&&modifier.isNotEmpty()){
  if(!modifierDrag&&android.graphics.PointF.length(e.rawX-modifierX,e.rawY-modifierY)>=dp(14)){
  val cancel=MotionEvent.obtain(e);cancel.action=MotionEvent.ACTION_CANCEL;super.dispatchTouchEvent(cancel);cancel.recycle()
- modifierDrag=true;savedShift=shift;savedAuto=autoShift
- if(modifier=="?123")symbols=true else shift=1
+ modifierDrag=true;savedShift=shift;savedAuto=autoShift;savedRu=ru
+ if(modifier=="?123")symbols=true else if(modifier=="🌐")ru=!ru else shift=1
  draw();pulse()
  }
  if(modifierDrag)return true
@@ -40,10 +41,11 @@ class DualIme: InputMethodService() {
  if(modifierDrag&&(e.actionMasked==MotionEvent.ACTION_UP||e.actionMasked==MotionEvent.ACTION_CANCEL)){
  val value=if(e.actionMasked==MotionEvent.ACTION_UP)hit(e.rawX,e.rawY) else null
  val wasSymbol=modifier=="?123"
+ val wasLanguage=modifier=="🌐"
  modifierDrag=false;modifier="";touching=false
- symbols=false;shift=savedShift;autoShift=savedAuto
- if(value!=null&&value.length==1&&(wasSymbol||value[0].isLetter())&&value !in listOf("⇧","⇪","⌫","↵","🌐")){
- send(if(wasSymbol)value else value.uppercase());pulse()
+ symbols=false;ru=savedRu;shift=savedShift;autoShift=savedAuto
+ if(value!=null&&value.length==1&&(wasSymbol||wasLanguage||value[0].isLetter())&&value !in listOf("⇧","⇪","⌫","↵","🌐")){
+ send(if(wasSymbol||wasLanguage)value else value.uppercase());pulse()
  }
  draw();flush();return true
  }
