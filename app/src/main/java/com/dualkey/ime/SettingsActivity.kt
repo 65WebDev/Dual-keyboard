@@ -23,8 +23,13 @@ class SettingsActivity: Activity() {
  window.decorView.setBackgroundColor(bg)
  window.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
  val l=LinearLayout(this).apply { orientation=1; setPadding(24,16,24,24) }
+ fun dp(v:Int)=(v*resources.displayMetrics.density+0.5f).toInt()
+ fun separator(parent:LinearLayout=l){
+ val line=android.view.View(this).apply{setBackgroundColor(if(night)0xff484b50.toInt() else 0xffd0d4d9.toInt())}
+ parent.addView(line,LinearLayout.LayoutParams(-1,dp(1)).apply{topMargin=dp(12);bottomMargin=dp(12)})
+ }
  fun button(s:String, f:()->Unit) { l.addView(Button(this).apply { text=s; setOnClickListener { f() } }) }
- l.addView(TextView(this).apply { text="DualKey 0.36 — EN +"; textSize=24f })
+ l.addView(TextView(this).apply { text="DualKey 0.37 — EN +"; textSize=24f })
  l.addView(TextView(this).apply{text=tr(R.string.settings_interface);textSize=18f})
  val interfacePicker=Spinner(this)
  interfacePicker.adapter=ArrayAdapter(this,android.R.layout.simple_spinner_dropdown_item,listOf(tr(R.string.settings_system),"English")+Languages.all.map{it.name})
@@ -37,9 +42,11 @@ class SettingsActivity: Activity() {
  if(code!=chosen){p.edit().putString("interface_language",code).apply();recreate()}
  }
  }
+ separator()
  button(tr(R.string.settings_enable)) { startActivity(Intent(Settings.ACTION_INPUT_METHOD_SETTINGS)) }
  button(tr(R.string.settings_choose)) { getSystemService(InputMethodManager::class.java).showInputMethodPicker() }
  fun toggle(s:String,k:String,d:Boolean) { l.addView(Switch(this).apply { text=s; if(night){thumbTintList=android.content.res.ColorStateList(arrayOf(intArrayOf(android.R.attr.state_checked),intArrayOf()),intArrayOf(0xffa8c7fa.toInt(),0xffa0a0a0.toInt()))}; isChecked=p.getBoolean(k,d); setOnCheckedChangeListener { _,v->p.edit().putBoolean(k,v).apply() } }) }
+ separator()
  l.addView(TextView(this).apply { text=tr(R.string.settings_theme); textSize=18f })
  val themes=RadioGroup(this).apply { orientation=RadioGroup.HORIZONTAL }
  val light=RadioButton(this).apply { id=android.view.View.generateViewId(); text=tr(R.string.settings_light) }
@@ -47,7 +54,9 @@ class SettingsActivity: Activity() {
  light.buttonTintList=accent;dark.buttonTintList=accent;themes.addView(light);themes.addView(dark);l.addView(themes)
  themes.check(if(p.getBoolean("dark",true))dark.id else light.id)
  themes.setOnCheckedChangeListener { _,id -> val selected=id==dark.id; if(selected!=night){p.edit().putBoolean("dark",selected).apply();recreate()} }
-  toggle(tr(R.string.settings_caps),"autocaps",true); toggle(tr(R.string.settings_swipe),"swipe",true); toggle(tr(R.string.settings_vibration),"haptic",true); toggle(tr(R.string.settings_preview),"preview",true); toggle(tr(R.string.settings_equal),"equal",false)
+ separator()
+ toggle(tr(R.string.settings_caps),"autocaps",true); toggle(tr(R.string.settings_swipe),"swipe",true); toggle(tr(R.string.settings_preview),"preview",true)
+ separator()
  l.addView(TextView(this).apply{text=tr(R.string.settings_second);textSize=18f})
  val languages=Spinner(this)
  languages.adapter=ArrayAdapter(this,android.R.layout.simple_spinner_dropdown_item,Languages.all.map{it.name})
@@ -64,8 +73,12 @@ class SettingsActivity: Activity() {
  l.addView(TextView(this).apply{text=tr(R.string.settings_source)+": FrequencyWords (OpenSubtitles), CC BY-SA 4.0. github.com/hermitdave/FrequencyWords";textSize=12f})
  updateDictionary()
  fun slider(s:String,k:String,min:Int,max:Int,d:Int) { val label=TextView(this); l.addView(label); val bar=SeekBar(this);bar.progressTintList=accent;bar.thumbTintList=accent; bar.max=max-min; bar.progress=p.getInt(k,d)-min; label.text="$s: ${bar.progress+min}"; l.addView(bar); bar.setOnSeekBarChangeListener(object:SeekBar.OnSeekBarChangeListener { override fun onProgressChanged(b:SeekBar,v:Int,u:Boolean){label.text="$s: ${v+min}";p.edit().putInt(k,v+min).apply()}; override fun onStartTrackingTouch(b:SeekBar){};override fun onStopTrackingTouch(b:SeekBar){} }) }
+ separator()
+ toggle(tr(R.string.settings_vibration),"haptic",true)
  slider(tr(R.string.settings_strength),"vibration_strength",1,100,75); slider(tr(R.string.settings_duration),"vibration_duration",5,50,30)
  button(tr(R.string.settings_test)) { if(p.getBoolean("haptic",true) && !KeyVibration.play(this,p)) l.performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP) }
+ separator()
+ toggle(tr(R.string.settings_equal),"equal",false)
  slider(tr(R.string.settings_height),"height",38,70,50); slider(tr(R.string.settings_size),"size",12,26,21)
  l.addView(TextView(this).apply{text=tr(R.string.settings_note);textSize=13f})
  val editor=EditText(this).apply { id=701; hint=tr(R.string.settings_editor); minLines=2; backgroundTintList=accent }
@@ -73,6 +86,7 @@ class SettingsActivity: Activity() {
  val container=LinearLayout(this).apply {
  orientation=1;setBackgroundColor(bg);isFocusableInTouchMode=true
  addView(scroll,LinearLayout.LayoutParams(-1,0,1f))
+ separator(this)
  addView(editor,LinearLayout.LayoutParams(-1,-2).apply{setMargins(24,0,24,8)})
  }
  if(android.os.Build.VERSION.SDK_INT>=30)window.setDecorFitsSystemWindows(false)
