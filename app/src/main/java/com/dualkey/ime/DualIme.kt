@@ -53,7 +53,15 @@ class DualIme: InputMethodService() {
  private var preview:PopupWindow?=null
  private fun hidePreview(){preview?.dismiss();preview=null}
  override fun onFinishInputView(finishingInput:Boolean){clearTrail();lastSwipe="";hidePreview();super.onFinishInputView(finishingInput)}
- private val p get()=getSharedPreferences("keys",0)
+ private val p by lazy {getSharedPreferences("keys",0)}
+ private val redrawSettings=Runnable {if(::root.isInitialized&&isInputViewShown){hidePreview();lastSwipe="";draw();root.requestLayout()}}
+ private val settingsListener=android.content.SharedPreferences.OnSharedPreferenceChangeListener {_,key->
+ if(key in setOf("height","size","equal","dark","swipe","autocaps")){
+ if(::root.isInitialized){root.removeCallbacks(redrawSettings);root.postDelayed(redrawSettings,32L)}
+ }
+ }
+ override fun onCreate(){super.onCreate();p.registerOnSharedPreferenceChangeListener(settingsListener)}
+ override fun onDestroy(){p.unregisterOnSharedPreferenceChangeListener(settingsListener);if(::root.isInitialized)root.removeCallbacks(redrawSettings);super.onDestroy()}
  private fun dp(n:Int)=(n*resources.displayMetrics.density+0.5f).toInt()
  override fun onCreateInputView():View { root=LinearLayout(this).apply { orientation=1 }; root.setOnApplyWindowInsetsListener { v,insets -> navBottom=if(android.os.Build.VERSION.SDK_INT>=30) insets.getInsetsIgnoringVisibility(WindowInsets.Type.navigationBars()).bottom else insets.stableInsetBottom; v.setPadding(dp(2),dp(3),dp(2),dp(4)+navBottom); insets }; draw(); root.requestApplyInsets(); return root }
  override fun onStartInputView(info:EditorInfo?, restarting:Boolean){super.onStartInputView(info,restarting);ru=p.getBoolean("ru",true);shift=0;autoShift=false;symbols=false;if(wantsCaps()){shift=1;autoShift=true};if(::root.isInitialized)draw()}
@@ -88,9 +96,9 @@ class DualIme: InputMethodService() {
  fun label(s:String,sz:Float,c:Int){
  val t=TextView(this).apply{text=s;textSize=sz;setTextColor(c);gravity=Gravity.CENTER;includeFontPadding=false;maxLines=1}
  if(letter||digit){
- val maxPx=(sz*resources.displayMetrics.scaledDensity).toInt().coerceAtLeast(1)
+ val maxPx=android.util.TypedValue.applyDimension(android.util.TypedValue.COMPLEX_UNIT_SP,sz,resources.displayMetrics).toInt().coerceAtLeast(1)
  t.setAutoSizeTextTypeUniformWithConfiguration(1,maxPx,1,android.util.TypedValue.COMPLEX_UNIT_PX)
- k.addView(t,LinearLayout.LayoutParams(-1,0,if(letter&&s==alt&&!p.getBoolean("equal",false))0.65f else 1f))
+ k.addView(t,LinearLayout.LayoutParams(-1,0,if(letter&&s==alt&&!p.getBoolean("equal",false))0.85f else 1.15f))
  }else k.addView(t)
  }
  if(main=="↵" || main=="⇧" || main=="⇪"){
