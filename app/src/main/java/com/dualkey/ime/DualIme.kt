@@ -190,9 +190,10 @@ class DualIme: InputMethodService() {
  private fun draw(){val retained=if(modifierDrag&&modifier=="?123")suggestions?.let{bar->(0 until bar.childCount).map{bar.getChildAt(it)}.also{bar.removeAllViews()}} else null;root.removeAllViews();targets.clear();swipeKeys.clear();clearTrail();trailDrawable?.let{root.overlay.remove(it)}; val dark=p.getBoolean("dark",true);val fg=if(dark)Color.WHITE else Color.rgb(30,33,38);val sub=if(dark)0xffb6c4d8.toInt() else 0xff53647a.toInt();root.setBackgroundColor(if(dark)0xff202124.toInt() else 0xffe1e3e8.toInt());root.setPadding(dp(2),dp(3),dp(2),dp(4)+navBottom)
  val swipeEnabled=p.getBoolean("swipe",true)&&!symbols&&((currentInputEditorInfo?.inputType?:0) and 0xfff) !in listOf(0x81,0x91,0xe1,0x12)
  suggestions=null
- if(swipeEnabled||(modifierDrag&&modifier=="?123"&&p.getBoolean("swipe",true)&&((currentInputEditorInfo?.inputType?:0) and 0xfff) !in listOf(0x81,0x91,0xe1,0x12))){
- suggestions=LinearLayout(this).also{bar->root.addView(bar,LinearLayout.LayoutParams(-1,dp(32)));retained?.forEach{bar.addView(it)}}
- }
+ val toolbar=LinearLayout(this).apply{gravity=Gravity.CENTER_VERTICAL}
+ root.addView(toolbar,LinearLayout.LayoutParams(-1,dp(32)))
+ toolbar.addView(TextView(this).apply{text="⚙";textSize=23f;gravity=Gravity.CENTER;setTextColor(fg);contentDescription="Настройки DualKey";setOnClickListener{pulse();startActivity(android.content.Intent(this@DualIme,SettingsActivity::class.java).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))}},LinearLayout.LayoutParams(dp(40),-1))
+ suggestions=LinearLayout(this).also{bar->toolbar.addView(bar,LinearLayout.LayoutParams(0,-1,1f));retained?.forEach{bar.addView(it)}}
  if(swipeEnabled){
  val d=object:android.graphics.drawable.Drawable(){
  private val paint=android.graphics.Paint(3).apply{color=0xff64b5f6.toInt();strokeWidth=dp(5).toFloat();strokeCap=android.graphics.Paint.Cap.ROUND;strokeJoin=android.graphics.Paint.Join.ROUND;style=android.graphics.Paint.Style.STROKE}
@@ -215,7 +216,7 @@ class DualIme: InputMethodService() {
  var gesturing=false
  val space=main==Languages.selected(this).name||main=="English"
  if(letter||digit)k.setPadding(dp(2),dp(2),dp(2),dp(2))
- fun label(s:String,sz:Float,c:Int){
+ fun label(s:String,sz:Float,c:Int,secondary:Boolean=false){
  val t=object:View(this@DualIme){
  private val paint=android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply{color=c;textAlign=android.graphics.Paint.Align.CENTER;typeface=android.graphics.Typeface.DEFAULT}
  override fun onDraw(canvas:android.graphics.Canvas){
@@ -226,16 +227,17 @@ class DualIme: InputMethodService() {
  val bounds=android.graphics.Rect()
  paint.getTextBounds(s,0,s.length,bounds)
  val metrics=paint.fontMetrics
- val scale=if(letter)minOf(1f,(width-dp(2)).coerceAtLeast(1)/paint.measureText("Ш").coerceAtLeast(1f),(height-dp(2)).coerceAtLeast(1)/(metrics.descent-metrics.ascent).coerceAtLeast(1f)) else minOf(1f,(width-dp(2)).coerceAtLeast(1)/paint.measureText(s).coerceAtLeast(1f),(height-dp(2)).coerceAtLeast(1)/bounds.height().coerceAtLeast(1).toFloat())
+ val commonWidth=if(letter){val available=(root.width-root.paddingLeft-root.paddingRight-dp(44))/11f-dp(6);minOf(width.toFloat()-dp(2),available).coerceAtLeast(1f)}else 0f
+ val scale=if(letter)minOf(1f,commonWidth/paint.measureText("Ш").coerceAtLeast(1f),(height-dp(2)).coerceAtLeast(1)/(metrics.descent-metrics.ascent).coerceAtLeast(1f)) else minOf(1f,(width-dp(2)).coerceAtLeast(1)/paint.measureText(s).coerceAtLeast(1f),(height-dp(2)).coerceAtLeast(1)/bounds.height().coerceAtLeast(1).toFloat())
  paint.textSize=requested*scale
  paint.getTextBounds(s,0,s.length,bounds)
  val fm=paint.fontMetrics
  val punctuationOffset=when(s){".",","->height*0.23f;"~","\u0060","'","\u0022","*","^"->-height*0.23f;else->0f}
  val baseline=if(s==":"||s==";"){val colon=android.graphics.Rect();paint.getTextBounds(":",0,1,colon);height/2f-(colon.top+colon.bottom)/2f+colon.top-bounds.top}else if(letter)height/2f-(fm.ascent+fm.descent)/2f else height/2f-(bounds.top+bounds.bottom)/2f
- canvas.drawText(s,width/2f,(baseline+punctuationOffset).coerceIn(-bounds.top.toFloat(),maxOf(-bounds.top.toFloat(),height-bounds.bottom.toFloat())),paint)
+ canvas.drawText(s,if(space)width/2f+(paint.measureText(s)-bounds.left-bounds.right)/2f else width/2f,(baseline+punctuationOffset).coerceIn(-bounds.top.toFloat(),maxOf(-bounds.top.toFloat(),height-bounds.bottom.toFloat())),paint)
  }
  }
- if(letter||digit)k.addView(t,LinearLayout.LayoutParams(-1,0,if(letter&&s==alt&&!p.getBoolean("equal",false))0.72f else 1.28f))
+ if(letter||digit)k.addView(t,LinearLayout.LayoutParams(-1,0,if(letter&&p.getBoolean("equal",false))1f else if(letter&&secondary)0.72f else 1.28f))
  else k.addView(t,LinearLayout.LayoutParams(-1,-1))
  }
  if(main=="↵" || main=="⇧" || main=="⇪"){
@@ -262,7 +264,7 @@ class DualIme: InputMethodService() {
  },LinearLayout.LayoutParams(dp(27),dp(27)))
  }else if(main=="🌐"){k.addView(object:View(this@DualIme){
  override fun onDraw(c:android.graphics.Canvas){super.onDraw(c);val p=android.graphics.Paint(3).apply{color=fg;style=android.graphics.Paint.Style.STROKE;strokeWidth=dp(2).toFloat()};val x=width/2f;val y=height/2f;val a=minOf(width,height)*0.40f;c.drawCircle(x,y,a,p);c.drawOval(x-a*0.46f,y-a,x+a*0.46f,y+a,p);c.drawLine(x-a,y,x+a,y,p);c.drawLine(x-a*0.85f,y-a*0.5f,x+a*0.85f,y-a*0.5f,p);c.drawLine(x-a*0.85f,y+a*0.5f,x+a*0.85f,y+a*0.5f,p)}
- },LinearLayout.LayoutParams(dp(27),dp(27)))}else{if(alt.isNotEmpty())label(alt,if(p.getBoolean("equal",false))size else size*0.48f,sub);label(main,if(digit)size*1.035f else if(main=="ABC")size*0.75f else if(main.length>3)size*0.78f else size,fg)}
+ },LinearLayout.LayoutParams(dp(27),dp(27)))}else{if(alt.isNotEmpty())label(alt,if(p.getBoolean("equal",false))size else size*0.48f,sub,true);label(main,if(digit)size*1.035f else if(main=="ABC")size*0.75f else if(main.length>3)size*0.78f else size,fg)}
  val accent=main=="↵"
  val activeShift=(main=="⇧"||main=="⇪")&&shift>0
  val special=main in listOf("⇧","⇪","?123","ABC","🌐","⌫")
