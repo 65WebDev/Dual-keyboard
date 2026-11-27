@@ -5,6 +5,7 @@ import kotlin.math.*
 class SwipeDecoder(private val context:Context){
  private val en by lazy{index(load("en"))}
  private val ru by lazy{index(load("ru"))}
+ fun warmUp(){en.size;ru.size}
  private fun load(lang:String):List<String> = try{context.assets.open("swipe_$lang.txt").bufferedReader().useLines{lines->lines.flatMap{it.split(Regex("\\s+")).asSequence()}.filter{it.length>=2&&it.all(Char::isLetter)}.distinct().toList()}}catch(e:Exception){emptyList()}
  private fun normalized(c:Char)=when(c){'ё'->'е';'ъ'->'х';else->c}
  private fun index(words:List<String>)=words.withIndex().groupBy{normalized(it.value.first()) to normalized(it.value.last())}
@@ -25,6 +26,7 @@ class SwipeDecoder(private val context:Context){
  val ends=keys.filterValues{dist(last,it)/unit<2.0f}.keys
  val dictionary=if(russian)ru else en
  for(a in starts)for(b in ends)for((rank,word) in dictionary[a to b].orEmpty()){
+ if(dist(first,keys[a]!!)+dist(last,keys[b]!!)>unit*3.2f)continue
  val points=word.mapNotNull{keys[when(it){'ё'->'е';'ъ'->'х';else->it}]}
  if(points.size!=word.length)continue
  val endpoint=(dist(first,points.first())+dist(last,points.last()))/unit
