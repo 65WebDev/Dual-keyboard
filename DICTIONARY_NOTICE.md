@@ -1,0 +1,1 @@
+Expanded dictionaries are generated from wordfreq 3.1.1 frequency data (CC BY-SA 4.0; see https://github.com/rspeer/wordfreq for upstream sources and attribution). The generated word lists are distributed under CC BY-SA 4.0 https://creativecommons.org/licenses/by-sa/4.0/. Build script filters the lists by alphabet and length and merges the original DualKey seed words.

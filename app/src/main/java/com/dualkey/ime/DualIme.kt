@@ -10,6 +10,18 @@ class DualIme: InputMethodService() {
  private var ru=true; private var shift=0; private var symbols=false; private var lastShift=0L
  private lateinit var root:LinearLayout
  private var navBottom=0
+ private var autoShift=false
+ private fun wantsCaps():Boolean {
+ if(!p.getBoolean("autocaps",true))return false
+ val type=currentInputEditorInfo?.inputType?:0
+ if((type and 15)!=1||(type and 0xff0) in listOf(0x10,0x20,0x80,0x90,0xd0,0xe0))return false
+ val ic=currentInputConnection?:return false
+ val before=ic.getTextBeforeCursor(256,0)?.toString()?:return false
+ val trimmed=before.trimEnd()
+ return before.isEmpty()||trimmed.isEmpty()||before.trimEnd(' ','\t','\r').endsWith('\n')||trimmed.lastOrNull() in listOf('.','!','?','…')
+ }
+ private fun refreshCaps(){if(shift==2)return;val next=if(wantsCaps())1 else 0;if(shift!=next){shift=next;autoShift=next==1;if(::root.isInitialized)draw()}}
+
  private val swipeKeys=linkedMapOf<Char,View>()
  private val trail=ArrayList<android.graphics.PointF>()
  private var trailDrawable:android.graphics.drawable.Drawable?=null
@@ -30,7 +42,7 @@ class DualIme: InputMethodService() {
  val prefix=if(prev?.isLetterOrDigit()==true)" " else ""
  val inserted=prefix+options.first()
  ic.commitText(inserted,1);lastSwipe=inserted
- if(shift==1){shift=0;draw()}
+ if(shift==1){shift=0;autoShift=false;draw()}
  suggestions?.let{bar->bar.removeAllViews();for(word in options){bar.addView(TextView(this).apply{text=word;gravity=Gravity.CENTER;textSize=16f;setTextColor(if(p.getBoolean("dark",true))Color.WHITE else Color.BLACK);setOnClickListener{
  val conn=currentInputConnection
  if(lastSwipe.isNotEmpty()&&conn?.getTextBeforeCursor(lastSwipe.length,0)?.toString()==lastSwipe){conn.deleteSurroundingText(lastSwipe.length,0);conn.commitText(prefix+word,1)}
@@ -44,9 +56,9 @@ class DualIme: InputMethodService() {
  private val p get()=getSharedPreferences("keys",0)
  private fun dp(n:Int)=(n*resources.displayMetrics.density+0.5f).toInt()
  override fun onCreateInputView():View { root=LinearLayout(this).apply { orientation=1 }; root.setOnApplyWindowInsetsListener { v,insets -> navBottom=if(android.os.Build.VERSION.SDK_INT>=30) insets.getInsetsIgnoringVisibility(WindowInsets.Type.navigationBars()).bottom else insets.stableInsetBottom; v.setPadding(dp(2),dp(3),dp(2),dp(4)+navBottom); insets }; draw(); root.requestApplyInsets(); return root }
- override fun onStartInputView(info:EditorInfo?, restarting:Boolean){super.onStartInputView(info,restarting);ru=p.getBoolean("ru",true);shift=0;symbols=false;if(::root.isInitialized)draw()}
+ override fun onStartInputView(info:EditorInfo?, restarting:Boolean){super.onStartInputView(info,restarting);ru=p.getBoolean("ru",true);shift=0;autoShift=false;symbols=false;if(wantsCaps()){shift=1;autoShift=true};if(::root.isInitialized)draw()}
  override fun onEvaluateFullscreenMode()=false
- private fun send(s:String){lastSwipe="";suggestions?.removeAllViews();currentInputConnection?.commitText(s,1);if(shift==1){shift=0;draw()}}
+ private fun send(s:String){lastSwipe="";suggestions?.removeAllViews();currentInputConnection?.commitText(s,1);if(shift==1&&s.any{it.isLetter()}){shift=0;autoShift=false;draw()}else if(s.any{it in ".!?…\n"}||s==" "){refreshCaps()}}
  private fun draw(){root.removeAllViews();swipeKeys.clear();clearTrail();trailDrawable?.let{root.overlay.remove(it)}; val dark=p.getBoolean("dark",true);val fg=if(dark)Color.WHITE else Color.rgb(30,33,38);val sub=if(dark)0xffb6c4d8.toInt() else 0xff53647a.toInt();root.setBackgroundColor(if(dark)0xff202124.toInt() else 0xffe1e3e8.toInt());root.setPadding(dp(2),dp(3),dp(2),dp(4)+navBottom)
  val swipeEnabled=p.getBoolean("swipe",true)&&!symbols&&((currentInputEditorInfo?.inputType?:0) and 0xfff) !in listOf(0x81,0x91,0xe1,0x12)
  suggestions=null
@@ -167,7 +179,7 @@ class DualIme: InputMethodService() {
  
  }
  fun shifted(s:String)=if(shift>0)s.uppercase() else s
- fun shiftKey(r:LinearLayout){key(r,if(shift==2)"⇪" else "⇧",weight=1.25f){val now=SystemClock.uptimeMillis();shift=if(shift==1&&now-lastShift<400)2 else if(shift>0)0 else 1;lastShift=now;draw()}}
+ fun shiftKey(r:LinearLayout){key(r,if(shift==2)"⇪" else "⇧",weight=1.25f){val now=SystemClock.uptimeMillis();shift=if(shift==1&&!autoShift&&now-lastShift<400)2 else if(shift>0)0 else 1;autoShift=false;lastShift=now;draw()}}
  fun deleteKey(r:LinearLayout){key(r,"⌫",weight=1.25f){val ic=currentInputConnection;if(!ic?.getSelectedText(0).isNullOrEmpty())ic?.commitText("",1) else ic?.deleteSurroundingTextInCodePoints(1,0)}}
  val digits=row();for(c in "1234567890")key(digits,c.toString()){send(c.toString())}
  if(symbols){for(line in listOf("!@#\$%^&*()","-_=+[]{}\\|","~`<>:;\"'/?")){val r=row();for(c in line)key(r,c.toString()){send(c.toString())};if(line.startsWith("~"))deleteKey(r)}}else{

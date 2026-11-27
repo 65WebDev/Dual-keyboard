@@ -3,9 +3,11 @@ import android.content.Context
 import android.graphics.PointF
 import kotlin.math.*
 class SwipeDecoder(private val context:Context){
- private val en by lazy{load("en")}
- private val ru by lazy{load("ru")}
+ private val en by lazy{index(load("en"))}
+ private val ru by lazy{index(load("ru"))}
  private fun load(lang:String):List<String> = try{context.assets.open("swipe_$lang.txt").bufferedReader().useLines{lines->lines.flatMap{it.split(Regex("\\s+")).asSequence()}.filter{it.length>=2&&it.all(Char::isLetter)}.distinct().toList()}}catch(e:Exception){emptyList()}
+ private fun normalized(c:Char)=when(c){'ё'->'е';'ъ'->'х';else->c}
+ private fun index(words:List<String>)=words.withIndex().groupBy{normalized(it.value.first()) to normalized(it.value.last())}
  private fun dist(a:PointF,b:PointF)=hypot(a.x-b.x,a.y-b.y)
  private fun sample(p:List<PointF>,n:Int=24):List<PointF>{
  if(p.size<2)return List(n){p.first()}
@@ -19,7 +21,10 @@ class SwipeDecoder(private val context:Context){
  val actual=sample(path)
  val first=path.first();val last=path.last()
  val best=java.util.PriorityQueue<Pair<String,Float>>(compareByDescending{it.second})
- for((rank,word) in (if(russian)ru else en).withIndex()){
+ val starts=keys.filterValues{dist(first,it)/unit<2.0f}.keys
+ val ends=keys.filterValues{dist(last,it)/unit<2.0f}.keys
+ val dictionary=if(russian)ru else en
+ for(a in starts)for(b in ends)for((rank,word) in dictionary[a to b].orEmpty()){
  val points=word.mapNotNull{keys[when(it){'ё'->'е';'ъ'->'х';else->it}]}
  if(points.size!=word.length)continue
  val endpoint=(dist(first,points.first())+dist(last,points.last()))/unit
