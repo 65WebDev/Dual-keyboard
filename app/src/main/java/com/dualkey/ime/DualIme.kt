@@ -55,7 +55,7 @@ class DualIme: InputMethodService() {
  },LinearLayout.LayoutParams(dp(if(main=="↵")29 else 25),dp(if(main=="↵")32 else 25)))
  }else if(main=="🌐"){k.addView(object:View(this@DualIme){
  override fun onDraw(c:android.graphics.Canvas){super.onDraw(c);val p=android.graphics.Paint(3).apply{color=fg;style=android.graphics.Paint.Style.STROKE;strokeWidth=dp(2).toFloat()};val x=width/2f;val y=height/2f;val a=minOf(width,height)*0.40f;c.drawCircle(x,y,a,p);c.drawOval(x-a*0.46f,y-a,x+a*0.46f,y+a,p);c.drawLine(x-a,y,x+a,y,p);c.drawLine(x-a*0.85f,y-a*0.5f,x+a*0.85f,y-a*0.5f,p);c.drawLine(x-a*0.85f,y+a*0.5f,x+a*0.85f,y+a*0.5f,p)}
- },LinearLayout.LayoutParams(dp(27),dp(27)))}else{if(alt.isNotEmpty())label(alt,if(p.getBoolean("equal",false))size else size*0.58f,sub);label(main,if(digit)size*1.035f else if(main.length>3)size*0.78f else size,fg)}
+ },LinearLayout.LayoutParams(dp(27),dp(27)))}else{if(alt.isNotEmpty())label(alt,if(p.getBoolean("equal",false))size else size*0.58f,sub);label(main,if(digit)size*1.035f else if(main=="ABC")size*0.75f else if(main.length>3)size*0.78f else size,fg)}
  val accent=main=="↵"
  val activeShift=(main=="⇧"||main=="⇪")&&shift>0
  val special=main in listOf("⇧","⇪","?123","ABC","🌐","⌫")
@@ -87,11 +87,11 @@ class DualIme: InputMethodService() {
  MotionEvent.ACTION_MOVE -> {
  if(space&&down&&(!longDone||sliding)){
  val dx=e.rawX-startX
- if(!sliding&&kotlin.math.abs(dx)>=dp(8)&&kotlin.math.abs(dx)>kotlin.math.abs(e.rawY-startY)){
+ if(!sliding&&kotlin.math.abs(dx)>=dp(6)&&kotlin.math.abs(dx)>kotlin.math.abs(e.rawY-startY)){
  sliding=true;longDone=true;v.removeCallbacks(longTask);hidePreview()
  }
  if(sliding){
- val step=dp(10).coerceAtLeast(1)
+ val step=(7.5f*resources.displayMetrics.density).coerceAtLeast(1f)
  val count=((e.rawX-cursorX)/step).toInt().coerceIn(-40,40)
  if(count!=0){
  val code=if(count<0)KeyEvent.KEYCODE_DPAD_LEFT else KeyEvent.KEYCODE_DPAD_RIGHT
