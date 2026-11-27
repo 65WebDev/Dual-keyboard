@@ -66,13 +66,13 @@ class DualIme: InputMethodService() {
  if(modifier=="?123")symbols=true else if(modifier=="🌐")ru=!ru else shift=1
  draw();pulse()
  }
- if(modifierDrag){fingerX=e.rawX;fingerY=e.rawY;val selected=hit(fingerX,fingerY);targets.forEach{(v,value)->v.isPressed=value==selected&&value.length==1&&value !in listOf("⇧","⇪","⌫","↵")};invalidate();return true}
+ if(modifierDrag){fingerX=e.rawX;fingerY=e.rawY;val selected=hit(fingerX,fingerY);targets.forEach{(v,value)->v.isPressed=value==selected&&value.length==1&&value !in listOf("⇧","⇪","⌫","↵")};showModifierPreview(selected);invalidate();return true}
  }
  if(modifierDrag&&(e.actionMasked==MotionEvent.ACTION_UP||e.actionMasked==MotionEvent.ACTION_CANCEL)){
  val value=if(e.actionMasked==MotionEvent.ACTION_UP)hit(e.rawX,e.rawY) else null
  val wasSymbol=modifier=="?123"
  val wasLanguage=modifier=="🌐"
- modifierDrag=false;invalidate();modifier="";touching=false
+ modifierDrag=false;hidePreview();invalidate();modifier="";touching=false
  symbols=false;ru=savedRu;shift=savedShift;autoShift=savedAuto
  if(value!=null&&value.length==1&&(wasSymbol||wasLanguage||value[0].isLetter())&&value !in listOf("⇧","⇪","⌫","↵","🌐")){
  send(if(wasSymbol||wasLanguage)value else value.uppercase());pulse()
@@ -103,14 +103,19 @@ class DualIme: InputMethodService() {
  private var suggestions:LinearLayout?=null
  private var lastSwipe=""
  private var composingSwipe=""
+ private var composingPrefix=""
+ private var modifierPreviewKey:View?=null
  private var pendingSpace=false
  private val confirmSwipe=Runnable{finishWord()}
  private fun finishWord(){ui.removeCallbacks(confirmSwipe);if(composingSwipe.isNotEmpty()){currentInputConnection?.finishComposingText();composingSwipe=""}}
  private fun putSwipe(text:String){
  finishWord()
  val ic=currentInputConnection?:return
- composingSwipe=text
- if(!ic.setComposingText(text,1)){composingSwipe="";ic.commitText(text,1)}
+ composingPrefix=text.takeWhile{it.isWhitespace()}
+ val word=text.drop(composingPrefix.length)
+ if(composingPrefix.isNotEmpty())ic.commitText(composingPrefix,1)
+ composingSwipe=word
+ if(!ic.setComposingText(word,1)){composingSwipe="";ic.commitText(word,1)}
  pendingSpace=true
  ui.postDelayed(confirmSwipe,2000L)
  }
@@ -119,7 +124,7 @@ class DualIme: InputMethodService() {
  val ic=currentInputConnection?:return false
  val word=composingSwipe
  if(ic.getTextBeforeCursor(word.length,0)?.toString()!=word){finishWord();pendingSpace=false;return false}
- ui.removeCallbacks(confirmSwipe);ic.setComposingText("",1);ic.finishComposingText();composingSwipe="";pendingSpace=false;lastSwipe="";return true
+ ui.removeCallbacks(confirmSwipe);ic.setComposingText("",1);ic.finishComposingText();if(composingPrefix.isNotEmpty())ic.deleteSurroundingText(composingPrefix.length,0);composingPrefix="";composingSwipe="";pendingSpace=false;lastSwipe="";refreshCaps();return true
  }
  private val decoder by lazy { SwipeDecoder(this) }
  private fun clearTrail(){trail.clear();trailDrawable?.invalidateSelf()}
@@ -154,7 +159,19 @@ class DualIme: InputMethodService() {
  }
 
  private var preview:PopupWindow?=null
- private fun hidePreview(){preview?.dismiss();preview=null}
+ private fun hidePreview(){preview?.dismiss();preview=null;modifierPreviewKey=null}
+ private fun showModifierPreview(selected:String?){
+ val v=targets.entries.firstOrNull{it.value==selected&&it.value.length==1&&it.value !in listOf("⇧","⇪","⌫","↵","🌐")}?.key
+ if(v==modifierPreviewKey)return
+ hidePreview()
+ if(v==null||!p.getBoolean("preview",true))return
+ val dark=p.getBoolean("dark",true)
+ val t=TextView(this).apply{text=selected;gravity=Gravity.CENTER;textSize=32f;setTextColor(if(dark)Color.WHITE else Color.BLACK);background=GradientDrawable().apply{cornerRadius=dp(8).toFloat();setColor(if(dark)0xff505764.toInt() else Color.WHITE)}}
+ val w=maxOf(dp(48),v.width)
+ val popup=PopupWindow(t,w,dp(64),false).apply{isTouchable=false;isClippingEnabled=true;elevation=dp(6).toFloat()}
+ preview=popup;modifierPreviewKey=v
+ try{popup.showAsDropDown(v,(v.width-w)/2,-v.height-dp(66))}catch(_:RuntimeException){hidePreview()}
+ }
  override fun onFinishInputView(finishingInput:Boolean){finishWord();pendingSpace=false;stopLive();session++;deferred.clear();touching=false;modifierDrag=false;clearTrail();lastSwipe="";hidePreview();super.onFinishInputView(finishingInput)}
  private val p by lazy {getSharedPreferences("keys",0)}
  private val redrawSettings=Runnable {if(::root.isInitialized&&isInputViewShown){hidePreview();lastSwipe="";draw();root.requestLayout()}}
@@ -216,7 +233,7 @@ class DualIme: InputMethodService() {
  canvas.drawText(s,width/2f,(baseline+punctuationOffset).coerceIn(-bounds.top.toFloat(),maxOf(-bounds.top.toFloat(),height-bounds.bottom.toFloat())),paint)
  }
  }
- if(letter||digit)k.addView(t,LinearLayout.LayoutParams(-1,0,if(letter&&s==alt&&!p.getBoolean("equal",false))0.85f else 1.15f))
+ if(letter||digit)k.addView(t,LinearLayout.LayoutParams(-1,0,if(letter&&s==alt&&!p.getBoolean("equal",false))0.72f else 1.28f))
  else k.addView(t,LinearLayout.LayoutParams(-1,-1))
  }
  if(main=="↵" || main=="⇧" || main=="⇪"){
@@ -243,7 +260,7 @@ class DualIme: InputMethodService() {
  },LinearLayout.LayoutParams(dp(27),dp(27)))
  }else if(main=="🌐"){k.addView(object:View(this@DualIme){
  override fun onDraw(c:android.graphics.Canvas){super.onDraw(c);val p=android.graphics.Paint(3).apply{color=fg;style=android.graphics.Paint.Style.STROKE;strokeWidth=dp(2).toFloat()};val x=width/2f;val y=height/2f;val a=minOf(width,height)*0.40f;c.drawCircle(x,y,a,p);c.drawOval(x-a*0.46f,y-a,x+a*0.46f,y+a,p);c.drawLine(x-a,y,x+a,y,p);c.drawLine(x-a*0.85f,y-a*0.5f,x+a*0.85f,y-a*0.5f,p);c.drawLine(x-a*0.85f,y+a*0.5f,x+a*0.85f,y+a*0.5f,p)}
- },LinearLayout.LayoutParams(dp(27),dp(27)))}else{if(alt.isNotEmpty())label(alt,if(p.getBoolean("equal",false))size else size*0.58f,sub);label(main,if(digit)size*1.035f else if(main=="ABC")size*0.75f else if(main.length>3)size*0.78f else size,fg)}
+ },LinearLayout.LayoutParams(dp(27),dp(27)))}else{if(alt.isNotEmpty())label(alt,if(p.getBoolean("equal",false))size else size*0.48f,sub);label(main,if(digit)size*1.035f else if(main=="ABC")size*0.75f else if(main.length>3)size*0.78f else size,fg)}
  val accent=main=="↵"
  val activeShift=(main=="⇧"||main=="⇪")&&shift>0
  val special=main in listOf("⇧","⇪","?123","ABC","🌐","⌫")
@@ -315,7 +332,7 @@ class DualIme: InputMethodService() {
  }
  fun shifted(s:String)=if(shift>0)s.uppercase() else s
  fun shiftKey(r:LinearLayout){key(r,if(shift==2)"⇪" else "⇧",weight=1.25f){val now=SystemClock.uptimeMillis();shift=if(shift==1&&!autoShift&&now-lastShift<400)2 else if(shift>0)0 else 1;autoShift=false;lastShift=now;draw()}}
- fun deleteKey(r:LinearLayout){key(r,"⌫",weight=1.25f){session++;deferred.clear();lastSwipe="";suggestions?.removeAllViews();if(deleteSwipe())return@key;finishWord();pendingSpace=false;val ic=currentInputConnection;if(!ic?.getSelectedText(0).isNullOrEmpty())ic?.commitText("",1) else ic?.deleteSurroundingTextInCodePoints(1,0)}}
+ fun deleteKey(r:LinearLayout){key(r,"⌫",weight=1.25f){session++;deferred.clear();lastSwipe="";suggestions?.removeAllViews();if(deleteSwipe())return@key;finishWord();pendingSpace=false;val ic=currentInputConnection;if(!ic?.getSelectedText(0).isNullOrEmpty())ic?.commitText("",1) else ic?.deleteSurroundingTextInCodePoints(1,0);refreshCaps()}}
  val digits=row();for(c in "1234567890")key(digits,c.toString()){send(c.toString())}
  if(symbols){for(line in listOf("!@#\$%^&*()","-_=+[]{}\\|","~`<>:;\"'/?")){val r=row();for(c in line)key(r,c.toString()){send(c.toString())};if(line.startsWith("~"))deleteKey(r)}}else{
  val en=listOf("qwertyuiop[","asdfghjkl;'","zxcvbnm,.");val rus=listOf("йцукенгшщзх","фывапролджэ","ячсмитьбю")

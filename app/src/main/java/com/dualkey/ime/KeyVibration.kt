@@ -11,9 +11,9 @@ object KeyVibration {
   if(!p.getBoolean("haptic",true)) return false
   val v=if(Build.VERSION.SDK_INT>=31) context.getSystemService(VibratorManager::class.java)?.defaultVibrator else context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
   if(v==null || !v.hasVibrator()) return false
-  val baseDuration=p.getInt("vibration_duration",15).coerceIn(5,50)
+  val baseDuration=p.getInt("vibration_duration",30).coerceIn(5,50)
   val duration=(if(micro) (baseDuration/3).coerceIn(3,8) else if(confirmation) (baseDuration*1.5f).toInt().coerceAtMost(75) else baseDuration).toLong()
-  val baseStrength=p.getInt("vibration_strength",30).coerceIn(1,100)
+  val baseStrength=p.getInt("vibration_strength",75).coerceIn(1,100)
   val strength=if(micro) (baseStrength*0.35f).toInt().coerceIn(1,35) else if(confirmation) (baseStrength*1.35f).toInt().coerceIn(1,100) else baseStrength
   val amplitude=if(v.hasAmplitudeControl()) (strength*255/100).coerceIn(1,255) else VibrationEffect.DEFAULT_AMPLITUDE
   return try { val effect=VibrationEffect.createOneShot(duration,amplitude)
