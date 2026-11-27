@@ -10,16 +10,57 @@ class DualIme: InputMethodService() {
  private var ru=true; private var shift=0; private var symbols=false; private var lastShift=0L
  private lateinit var root:LinearLayout
  private var navBottom=0
+ private val swipeKeys=linkedMapOf<Char,View>()
+ private val trail=ArrayList<android.graphics.PointF>()
+ private var trailDrawable:android.graphics.drawable.Drawable?=null
+ private var suggestions:LinearLayout?=null
+ private var lastSwipe=""
+ private val decoder by lazy { SwipeDecoder(this) }
+ private fun clearTrail(){trail.clear();trailDrawable?.invalidateSelf()}
+ private fun swipePoint(x:Float,y:Float){val pos=IntArray(2);root.getLocationOnScreen(pos);val q=android.graphics.PointF(x-pos[0],y-pos[1]);if(trail.isEmpty()||android.graphics.PointF.length(q.x-trail.last().x,q.y-trail.last().y)>=dp(2)){if(trail.size<512)trail.add(q);trailDrawable?.invalidateSelf()}}
+ private fun finishSwipe(){
+ val pos=IntArray(2);root.getLocationOnScreen(pos)
+ val centers=swipeKeys.mapValues{(_,v)->val a=IntArray(2);v.getLocationOnScreen(a);android.graphics.PointF(a[0]-pos[0]+v.width/2f,a[1]-pos[1]+v.height/2f)}
+ val words=decoder.decode(trail,centers,ru,dp(30).toFloat())
+ clearTrail()
+ if(words.isEmpty())return
+ val options=words.map{if(shift==2)it.uppercase() else if(shift==1)it.replaceFirstChar{c->c.uppercase()} else it}
+ val ic=currentInputConnection?:return
+ val prev=ic.getTextBeforeCursor(1,0)?.lastOrNull()
+ val prefix=if(prev?.isLetterOrDigit()==true)" " else ""
+ val inserted=prefix+options.first()
+ ic.commitText(inserted,1);lastSwipe=inserted
+ if(shift==1){shift=0;draw()}
+ suggestions?.let{bar->bar.removeAllViews();for(word in options){bar.addView(TextView(this).apply{text=word;gravity=Gravity.CENTER;textSize=16f;setTextColor(if(p.getBoolean("dark",true))Color.WHITE else Color.BLACK);setOnClickListener{
+ val conn=currentInputConnection
+ if(lastSwipe.isNotEmpty()&&conn?.getTextBeforeCursor(lastSwipe.length,0)?.toString()==lastSwipe){conn.deleteSurroundingText(lastSwipe.length,0);conn.commitText(prefix+word,1)}
+ lastSwipe="";bar.removeAllViews()
+ }},LinearLayout.LayoutParams(0,-1,1f))}}
+ }
+
  private var preview:PopupWindow?=null
  private fun hidePreview(){preview?.dismiss();preview=null}
- override fun onFinishInputView(finishingInput:Boolean){hidePreview();super.onFinishInputView(finishingInput)}
+ override fun onFinishInputView(finishingInput:Boolean){clearTrail();lastSwipe="";hidePreview();super.onFinishInputView(finishingInput)}
  private val p get()=getSharedPreferences("keys",0)
  private fun dp(n:Int)=(n*resources.displayMetrics.density+0.5f).toInt()
  override fun onCreateInputView():View { root=LinearLayout(this).apply { orientation=1 }; root.setOnApplyWindowInsetsListener { v,insets -> navBottom=if(android.os.Build.VERSION.SDK_INT>=30) insets.getInsetsIgnoringVisibility(WindowInsets.Type.navigationBars()).bottom else insets.stableInsetBottom; v.setPadding(dp(2),dp(3),dp(2),dp(4)+navBottom); insets }; draw(); root.requestApplyInsets(); return root }
  override fun onStartInputView(info:EditorInfo?, restarting:Boolean){super.onStartInputView(info,restarting);ru=p.getBoolean("ru",true);shift=0;symbols=false;if(::root.isInitialized)draw()}
  override fun onEvaluateFullscreenMode()=false
- private fun send(s:String){currentInputConnection?.commitText(s,1);if(shift==1){shift=0;draw()}}
- private fun draw(){root.removeAllViews(); val dark=p.getBoolean("dark",true);val fg=if(dark)Color.WHITE else Color.rgb(30,33,38);val sub=if(dark)0xffb6c4d8.toInt() else 0xff53647a.toInt();root.setBackgroundColor(if(dark)0xff202124.toInt() else 0xffe1e3e8.toInt());root.setPadding(dp(2),dp(3),dp(2),dp(4)+navBottom)
+ private fun send(s:String){lastSwipe="";suggestions?.removeAllViews();currentInputConnection?.commitText(s,1);if(shift==1){shift=0;draw()}}
+ private fun draw(){root.removeAllViews();swipeKeys.clear();clearTrail();trailDrawable?.let{root.overlay.remove(it)}; val dark=p.getBoolean("dark",true);val fg=if(dark)Color.WHITE else Color.rgb(30,33,38);val sub=if(dark)0xffb6c4d8.toInt() else 0xff53647a.toInt();root.setBackgroundColor(if(dark)0xff202124.toInt() else 0xffe1e3e8.toInt());root.setPadding(dp(2),dp(3),dp(2),dp(4)+navBottom)
+ val swipeEnabled=p.getBoolean("swipe",true)&&!symbols&&((currentInputEditorInfo?.inputType?:0) and 0xfff) !in listOf(0x81,0x91,0xe1,0x12)
+ suggestions=null
+ if(swipeEnabled){
+ suggestions=LinearLayout(this).also{root.addView(it,LinearLayout.LayoutParams(-1,dp(32)))}
+ val d=object:android.graphics.drawable.Drawable(){
+ private val paint=android.graphics.Paint(3).apply{color=0xff64b5f6.toInt();strokeWidth=dp(5).toFloat();strokeCap=android.graphics.Paint.Cap.ROUND;strokeJoin=android.graphics.Paint.Join.ROUND;style=android.graphics.Paint.Style.STROKE}
+ override fun draw(c:android.graphics.Canvas){if(trail.size<2)return;val path=android.graphics.Path();path.moveTo(trail[0].x,trail[0].y);for(q in trail.drop(1))path.lineTo(q.x,q.y);c.drawPath(path,paint)}
+ override fun setAlpha(a:Int){paint.alpha=a}
+ override fun setColorFilter(f:android.graphics.ColorFilter?){paint.colorFilter=f}
+ override fun getOpacity()=android.graphics.PixelFormat.TRANSLUCENT
+ }
+ trailDrawable=d;d.setBounds(0,0,root.width,root.height);root.overlay.add(d);root.post{d.setBounds(0,0,root.width,root.height)}
+ }
  val h=p.getInt("height",50);val size=p.getInt("size",21).toFloat()
  fun row():LinearLayout=LinearLayout(this).also { root.addView(it,LinearLayout.LayoutParams(-1,dp(h))) }
  fun key(r:LinearLayout, main:String, alt:String="",weight:Float=1f, hold:(()->Unit)?=null, action:()->Unit){val k=LinearLayout(this).apply {orientation=1;gravity=Gravity.CENTER;isClickable=true;contentDescription=if(alt.isEmpty())main else "$main / $alt";background=GradientDrawable().apply {cornerRadius=dp(8).toFloat();setColor(if(dark)0xff3c4043.toInt() else Color.WHITE)} }; val lp=LinearLayout.LayoutParams(0,-1,weight).apply{setMargins(dp(2),dp(3),dp(2),dp(3))
@@ -27,6 +68,9 @@ class DualIme: InputMethodService() {
  if(main=="↵"){setMargins(dp(2),dp(1),dp(2),dp(1))}};r.addView(k,lp)
  val digit=main.length==1&&main[0].isDigit()&&alt.isEmpty()
  val letter=alt.isNotEmpty()
+ val swipeLetter=swipeEnabled&&letter&&main.length==1&&main[0].isLetter()
+ if(swipeLetter)swipeKeys[main[0].lowercaseChar()]=k
+ var gesturing=false
  val space=main=="Русский"||main=="English"
  if(letter||digit)k.setPadding(dp(2),dp(2),dp(2),dp(2))
  fun label(s:String,sz:Float,c:Int){
@@ -52,7 +96,7 @@ class DualIme: InputMethodService() {
  if(main=="⇪"){paint.style=android.graphics.Paint.Style.STROKE;c.drawLine(10f,29f,22f,29f,paint)}
  c.restore()
  }
- },LinearLayout.LayoutParams(dp(if(main=="↵")29 else 25),dp(if(main=="↵")32 else 25)))
+ },LinearLayout.LayoutParams(dp(if(main=="↵")29 else 25),dp(if(main=="↵")29 else 25)))
  }else if(main=="🌐"){k.addView(object:View(this@DualIme){
  override fun onDraw(c:android.graphics.Canvas){super.onDraw(c);val p=android.graphics.Paint(3).apply{color=fg;style=android.graphics.Paint.Style.STROKE;strokeWidth=dp(2).toFloat()};val x=width/2f;val y=height/2f;val a=minOf(width,height)*0.40f;c.drawCircle(x,y,a,p);c.drawOval(x-a*0.46f,y-a,x+a*0.46f,y+a,p);c.drawLine(x-a,y,x+a,y,p);c.drawLine(x-a*0.85f,y-a*0.5f,x+a*0.85f,y-a*0.5f,p);c.drawLine(x-a*0.85f,y+a*0.5f,x+a*0.85f,y+a*0.5f,p)}
  },LinearLayout.LayoutParams(dp(27),dp(27)))}else{if(alt.isNotEmpty())label(alt,if(p.getBoolean("equal",false))size else size*0.58f,sub);label(main,if(digit)size*1.035f else if(main=="ABC")size*0.75f else if(main.length>3)size*0.78f else size,fg)}
@@ -79,12 +123,18 @@ class DualIme: InputMethodService() {
  })
  k.setOnTouchListener { v,e ->
  when(e.actionMasked){
- MotionEvent.ACTION_DOWN -> {down=true;longDone=false;sliding=false;startX=e.rawX;startY=e.rawY;cursorX=startX;repeats=0;v.isPressed=true;if(p.getBoolean("haptic",true)){if(!KeyVibration.play(this,p))v.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)};if(main=="⌫")v.postDelayed(longTask,350L) else if(hold!=null)v.postDelayed(longTask,ViewConfiguration.getLongPressTimeout().toLong())
+ MotionEvent.ACTION_DOWN -> {down=true;longDone=false;sliding=false;gesturing=false;if(swipeLetter){clearTrail();swipePoint(e.rawX,e.rawY)};startX=e.rawX;startY=e.rawY;cursorX=startX;repeats=0;v.isPressed=true;if(p.getBoolean("haptic",true)){if(!KeyVibration.play(this,p))v.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)};if(main=="⌫")v.postDelayed(longTask,350L) else if(hold!=null)v.postDelayed(longTask,ViewConfiguration.getLongPressTimeout().toLong())
  if(p.getBoolean("preview",true)&&main.length==1&&(main[0].isLetterOrDigit()||alt.isNotEmpty())){
  hidePreview();val t=TextView(this).apply{text=main;textSize=32f;gravity=Gravity.CENTER;setTextColor(fg);background=bg(normal)}
  val w=maxOf(dp(48),v.width);val popup=PopupWindow(t,w,dp(64),false).apply{isTouchable=false;isClippingEnabled=true;elevation=dp(6).toFloat()};preview=popup;try { popup.showAsDropDown(v,(v.width-w)/2,-v.height-dp(66)) } catch (_:RuntimeException){hidePreview()}
  }}
  MotionEvent.ACTION_MOVE -> {
+ if(swipeLetter&&down&&(!longDone||gesturing)){
+ val distance=android.graphics.PointF.length(e.rawX-startX,e.rawY-startY)
+ if(!gesturing&&distance>=dp(14)){gesturing=true;longDone=true;v.removeCallbacks(longTask);hidePreview();v.isPressed=false}
+ if(gesturing){for(i in 0 until e.historySize)swipePoint(e.getHistoricalX(i)+e.rawX-e.x,e.getHistoricalY(i)+e.rawY-e.y);swipePoint(e.rawX,e.rawY)}
+ }
+
  if(space&&down&&(!longDone||sliding)){
  val dx=e.rawX-startX
  if(!sliding&&kotlin.math.abs(dx)>=dp(6)&&kotlin.math.abs(dx)>kotlin.math.abs(e.rawY-startY)){
@@ -110,8 +160,8 @@ class DualIme: InputMethodService() {
  }
  }
  }
- MotionEvent.ACTION_UP -> {val click=down&&!longDone;if(down&&main=="⌫"&&repeats>0)microTick();down=false;v.removeCallbacks(longTask);hidePreview();v.isPressed=false;if(click)v.performClick()}
- MotionEvent.ACTION_CANCEL -> {down=false;v.removeCallbacks(longTask);hidePreview();v.isPressed=false}
+ MotionEvent.ACTION_UP -> {val click=down&&!longDone;if(down&&main=="⌫"&&repeats>0)microTick();down=false;v.removeCallbacks(longTask);hidePreview();v.isPressed=false;if(gesturing){swipePoint(e.rawX,e.rawY);finishSwipe()}else{if(swipeLetter)clearTrail();if(click)v.performClick()}}
+ MotionEvent.ACTION_CANCEL -> {if(swipeLetter)clearTrail();down=false;v.removeCallbacks(longTask);hidePreview();v.isPressed=false}
  };true }
  k.setOnClickListener {action()}
  
