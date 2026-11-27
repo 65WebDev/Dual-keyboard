@@ -207,7 +207,6 @@ class DualIme: InputMethodService() {
  val h=p.getInt("height",50);val size=p.getInt("size",21).toFloat()
  fun row():LinearLayout=LinearLayout(this).also { root.addView(it,LinearLayout.LayoutParams(-1,dp(h))) }
  fun key(r:LinearLayout, main:String, alt:String="",weight:Float=1f, hold:(()->Unit)?=null, action:()->Unit){val k=LinearLayout(this).apply {orientation=1;gravity=Gravity.CENTER;isClickable=true;contentDescription=if(alt.isEmpty())main else "$main / $alt";background=GradientDrawable().apply {cornerRadius=dp(8).toFloat();setColor(if(dark)0xff3c4043.toInt() else Color.WHITE)} }; val lp=LinearLayout.LayoutParams(0,-1,weight).apply{setMargins(dp(2),dp(3),dp(2),dp(3))
- if(main=="⇧"||main=="⇪"){height=(dp(h)*0.85f).toInt()-dp(6);gravity=Gravity.CENTER_VERTICAL}
  if(main=="↵"){setMargins(dp(2),dp(1),dp(2),dp(1))}};r.addView(k,lp);targets[k]=main
  val digit=main.length==1&&main[0].isDigit()&&alt.isEmpty()
  val letter=alt.isNotEmpty()
