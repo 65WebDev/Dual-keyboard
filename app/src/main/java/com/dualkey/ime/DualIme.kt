@@ -70,7 +70,7 @@ class DualIme: InputMethodService() {
  var repeats=0
  val longTask=object:Runnable { override fun run(){
  if(!down)return
- if(main=="⌫"){if(repeats==0)confirmHold();longDone=true;action();repeats++;k.postDelayed(this,if(repeats>12)45L else if(repeats>5)75L else 120L)}
+ if(main=="⌫"){if(repeats==0)microTick();longDone=true;action();repeats++;k.postDelayed(this,if(repeats>12)45L else if(repeats>5)75L else 120L)}
  else if(hold!=null){longDone=true;hidePreview();if(main=="Русский"||main=="English")confirmHold();hold()}
  } }
  k.addOnAttachStateChangeListener(object:View.OnAttachStateChangeListener {
