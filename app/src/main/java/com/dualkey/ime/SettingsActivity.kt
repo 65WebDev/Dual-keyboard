@@ -29,7 +29,7 @@ class SettingsActivity: Activity() {
  parent.addView(line,LinearLayout.LayoutParams(-1,dp(1)).apply{topMargin=dp(12);bottomMargin=dp(12)})
  }
  fun button(s:String, f:()->Unit) { l.addView(Button(this).apply { text=s; setOnClickListener { f() } }) }
- l.addView(TextView(this).apply { text="DualKey 0.37 — EN +"; textSize=24f })
+ l.addView(TextView(this).apply { text="DualKey 0.38 — EN +"; textSize=24f })
  l.addView(TextView(this).apply{text=tr(R.string.settings_interface);textSize=18f})
  val interfacePicker=Spinner(this)
  interfacePicker.adapter=ArrayAdapter(this,android.R.layout.simple_spinner_dropdown_item,listOf(tr(R.string.settings_system),"English")+Languages.all.map{it.name})
